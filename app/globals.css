@@ -1,0 +1,247 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap");
+
+/* Update the root variables to support both light and dark modes */
+:root {
+  --background: #ffffff;
+  --foreground: #28384d;
+  --primary: #28384d;
+  --secondary: #00adb5;
+  --accent: #fccd11;
+  --text-primary: #000000;
+  --text-secondary: #ffffff;
+  --navy: #28384d;
+  --navy-light: #3a4d68;
+}
+
+.dark {
+  --background: #28384d;
+  --foreground: #ffffff;
+  --primary: #ffffff;
+  --secondary: #00adb5;
+  --accent: #fccd11;
+  --text-primary: #ffffff;
+  --text-secondary: #28384d;
+  --navy: #1c2736;
+  --navy-light: #28384d;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-montserrat), sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-montserrat), sans-serif;
+  font-weight: 700;
+  color: var(--primary);
+  transition: color 0.3s ease;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(40, 56, 77, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 173, 181, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 173, 181, 0.8);
+}
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Animation utilities */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+/* Enhanced gradient text with better visibility in both modes */
+.gradient-text {
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0px 0px 1px rgba(0, 0, 0, 0.1);
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Main gradient text for headlines */
+.main-gradient-text {
+  background: linear-gradient(45deg, var(--navy), var(--secondary), var(--accent));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient 8s ease infinite;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Add dark mode specific gradient text */
+.dark .gradient-text {
+  background: linear-gradient(45deg, var(--accent), var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2);
+  filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.2));
+}
+
+.hover-gradient {
+  background: linear-gradient(45deg, var(--primary), var(--secondary));
+  background-size: 200% 200%;
+  transition: all 0.5s ease;
+}
+
+.hover-gradient:hover {
+  background-position: 100% 100%;
+}
+
+/* Custom scrollbar - update for dark mode */
+.dark ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(0, 173, 181, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 173, 181, 0.8);
+}
+
+/* Enhanced text visibility for hero section */
+.hero-text {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .hero-text {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Clean, minimalist design elements */
+.clean-backdrop {
+  background-color: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50px;
+  padding: 0.5rem 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.clean-backdrop:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+.dark .clean-backdrop {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.dark .clean-backdrop:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Card hover effects */
+.service-card {
+  transition: all 0.3s ease;
+}
+
+.service-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Button animations */
+.btn-primary {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.btn-primary:hover::after {
+  width: 300%;
+  height: 300%;
+}
+
+/* Enhanced backdrop for text visibility */
+.text-backdrop {
+  background-color: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 8px;
+  padding: 0.5rem 1rem;
+}
+
+.dark .text-backdrop {
+  background-color: rgba(40, 56, 77, 0.3);
+}
+
+/* Add this to your existing globals.css */
+.font-handwriting {
+  font-family: "Dancing Script", cursive;
+}
+
+/* Rest of your CSS */
+

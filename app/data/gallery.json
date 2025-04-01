@@ -1,0 +1,67 @@
+{
+  "en": [
+    {
+      "id": 1,
+      "title": "Team Building Event 2023",
+      "category": "Events",
+      "src": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/3M7A3797.jpg-4xIaAstel9xbV1vp4auINgxuEOhJsz.jpeg"
+    },
+    {
+      "id": 2,
+      "title": "Annual Conference",
+      "category": "Events",
+      "src": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/3M7A3764.jpg-R8CTzh4Kr5W2GDoErCWS9cV1FluTYO.jpeg"
+    },
+    {
+      "id": 3,
+      "title": "Forum ENIT Entreprise",
+      "category": "Events",
+      "src": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cover1.jpg-dU6o5ytm6GGrypJyhxh3V2um4UkU9o.jpeg"
+    },
+    {
+      "id": 4,
+      "title": "Workshop Session",
+      "category": "Workshops",
+      "src": "/placeholder.svg?height=600&width=800"
+    },
+    {
+      "id": 5,
+      "title": "Project Showcase",
+      "category": "Projects",
+      "src": "/placeholder.svg?height=600&width=800"
+    }
+  ],
+  "fr": [
+    {
+      "id": 1,
+      "title": "Événement de Team Building 2023",
+      "category": "Événements",
+      "src": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/3M7A3797.jpg-4xIaAstel9xbV1vp4auINgxuEOhJsz.jpeg"
+    },
+    {
+      "id": 2,
+      "title": "Conférence Annuelle",
+      "category": "Événements",
+      "src": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/3M7A3764.jpg-R8CTzh4Kr5W2GDoErCWS9cV1FluTYO.jpeg"
+    },
+    {
+      "id": 3,
+      "title": "Forum ENIT Entreprise",
+      "category": "Événements",
+      "src": "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/Cover1.jpg-dU6o5ytm6GGrypJyhxh3V2um4UkU9o.jpeg"
+    },
+    {
+      "id": 4,
+      "title": "Session d'Atelier",
+      "category": "Ateliers",
+      "src": "/placeholder.svg?height=600&width=800"
+    },
+    {
+      "id": 5,
+      "title": "Présentation de Projet",
+      "category": "Projets",
+      "src": "/placeholder.svg?height=600&width=800"
+    }
+  ]
+}
+
