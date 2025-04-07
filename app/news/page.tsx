@@ -116,7 +116,13 @@ export default function NewsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const { language, setLanguage } = useLanguage()
   
-  const supabase = createClientComponentClient()
+  // Initialize Supabase with explicit URL and key to avoid issues with environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabase = createClientComponentClient({
+    supabaseUrl,
+    supabaseKey: supabaseAnonKey,
+  });
 
   // Extract unique categories from news articles
   const categories = [...new Set(news.map(article => article.category).filter(Boolean))] as string[];
@@ -158,23 +164,57 @@ export default function NewsPage() {
 
   const fetchNews = async () => {
     try {
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .order("created_at", { ascending: false })
+      setLoading(true);
+      console.log("Attempting to fetch news from Supabase...");
       
-      if (error) throw error
-      setNews(data)
+      // Check if Supabase URL and key are available
+      if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error("Supabase credentials are missing");
+      }
+      
+      // Use explicit error handling with fetch
+      try {
+        const { data, error } = await supabase
+          .from("news")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          console.error("Supabase error:", error);
+          throw new Error(`Database error: ${error.message} (Code: ${error.code})`);
+        }
+        
+        console.log(`Successfully fetched ${data?.length || 0} news articles`);
+        setNews(data || []);
+      } catch (fetchError: any) {
+        console.error("Fetch operation error:", fetchError);
+        throw new Error(fetchError.message || "Network error while fetching news");
+      }
     } catch (err: any) {
-      setError(err.message)
+      console.error("News fetch error:", err);
+      setError(err.message || "Failed to fetch news");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const toggleLanguage = (lang?: "fr" | "en") => {
     setLanguage(lang || (language === "fr" ? "en" : "fr"))
   }
+
+  // Add a component to display debug information
+  const DebugInfo = () => (
+    <div className="bg-gray-50 dark:bg-[#28384d]/40 p-4 rounded-lg border border-gray-200 dark:border-white/10 my-4 text-sm max-w-xl mx-auto">
+      <h3 className="font-semibold mb-2">Debug Information</h3>
+      <ul className="space-y-1 text-gray-600 dark:text-gray-300">
+        <li>Environment: <span className="font-mono">{process.env.NODE_ENV}</span></li>
+        <li>Supabase URL: <span className="font-mono">{process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing'}</span></li>
+        <li>Supabase Key: <span className="font-mono">{process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'}</span></li>
+        <li><a href="/api/supabase-test" className="text-blue-500 hover:underline" target="_blank">Check API Connection</a></li>
+        <li><a href="/news-test" className="text-blue-500 hover:underline">Try Server-Side Rendered Version</a></li>
+      </ul>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -197,6 +237,8 @@ export default function NewsPage() {
               {language === "fr" ? "Réessayer" : "Try Again"}
             </button>
           </div>
+          
+          <DebugInfo />
         </div>
       </div>
     )
