@@ -132,17 +132,31 @@ export default function ProjectsPage() {
 
   const fetchProjects = async () => {
     try {
-      const { data, error } = await supabase
+      setLoading(true);
+      console.log("Attempting to fetch projects from Supabase...");
+      
+      // Check if Supabase URL and key are available
+      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        throw new Error("Supabase credentials are missing");
+      }
+      
+      const { data, error, status } = await supabase
         .from("projects")
         .select("*")
-        .order("created_at", { ascending: false })
+        .order("created_at", { ascending: false });
       
-      if (error) throw error
-      setProjects(data || [])
+      if (error) {
+        console.error("Supabase error:", error);
+        throw new Error(`Database error: ${error.message} (Code: ${error.code})`);
+      }
+      
+      console.log(`Successfully fetched ${data?.length || 0} projects`);
+      setProjects(data || []);
     } catch (err: any) {
-      setError(err.message)
+      console.error("Project fetch error:", err);
+      setError(err.message || "Failed to fetch projects");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
