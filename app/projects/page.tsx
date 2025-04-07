@@ -172,6 +172,20 @@ export default function ProjectsPage() {
     )
   }
 
+  // Add a component to display debug information
+  const DebugInfo = () => (
+    <div className="bg-gray-50 dark:bg-[#28384d]/40 p-4 rounded-lg border border-gray-200 dark:border-white/10 my-4 text-sm">
+      <h3 className="font-semibold mb-2">Debug Information</h3>
+      <ul className="space-y-1 text-gray-600 dark:text-gray-300">
+        <li>Environment: <span className="font-mono">{process.env.NODE_ENV}</span></li>
+        <li>Supabase URL: <span className="font-mono">{process.env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Set' : '❌ Missing'}</span></li>
+        <li>Supabase Key: <span className="font-mono">{process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Missing'}</span></li>
+        <li><a href="/api/supabase-test" className="text-blue-500 hover:underline" target="_blank">Check API Connection</a></li>
+        <li><a href="/projects-test" className="text-blue-500 hover:underline">Try Server-Side Rendered Version</a></li>
+      </ul>
+    </div>
+  );
+
   if (error) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#28384d] pt-32 pb-20 transition-colors duration-300">
@@ -185,6 +199,8 @@ export default function ProjectsPage() {
               {language === "fr" ? "Réessayer" : "Try Again"}
             </button>
           </div>
+          
+          <DebugInfo />
         </div>
       </div>
     )
