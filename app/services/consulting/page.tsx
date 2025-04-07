@@ -20,35 +20,29 @@ import Image from "next/image"
 
 import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
-import { getThemePreference, setThemePreference } from '@/app/utils/theme'
+import { getThemePreference, setThemePreference } from "@/app/utils/theme"
+import { useLanguage } from "@/app/contexts/LanguageContext"
 
 export default function ConsultingPage() {
   const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState<"fr" | "en">("fr")
-  const [activeTab, setActiveTab] = useState<string>("market")
+  const [activeTab, setActiveTab] = useState<string>("business")
+  const { language, setLanguage } = useLanguage()
 
-  // Initialize theme on mount
+  // Initialize theme and state on mount
   useEffect(() => {
     const theme = getThemePreference()
-    setDarkMode(theme === 'dark')
+    setDarkMode(theme === "dark")
     setThemePreference(theme)
+
+    // Apply dark mode class immediately
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
   }, [])
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const newTheme = !prev ? 'dark' : 'light'
-      setThemePreference(newTheme)
-      return !prev
-    })
-  }
-
-  // Set language
-  const toggleLanguage = (lang: "fr" | "en") => {
-    setLanguage(lang)
-  }
-
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element when darkMode changes
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark")
@@ -56,6 +50,24 @@ export default function ConsultingPage() {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const newTheme = !prev ? "dark" : "light"
+      setThemePreference(newTheme)
+      return !prev
+    })
+  }
+
+  // Toggle language
+  const toggleLanguage = (lang?: "fr" | "en") => {
+    if (lang) {
+      setLanguage(lang);
+    } else {
+      setLanguage(language === "fr" ? "en" : "fr");
+    }
+  }
 
   // FAQ data
   const faqs =
@@ -175,9 +187,8 @@ export default function ConsultingPage() {
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
               <h2 className="text-3xl font-bold mb-6">
                 {language === "fr" ? "Aperçu du Service" : "Service Overview"}
@@ -691,7 +702,7 @@ export default function ConsultingPage() {
         </div>
       </section>
 
-      <Footer language={language} toggleLanguage={toggleLanguage} />
+      <Footer />
     </div>
   )
 }

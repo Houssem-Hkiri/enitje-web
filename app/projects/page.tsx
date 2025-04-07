@@ -1,51 +1,117 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import Image from "next/image"
 import Link from "next/link"
-import { motion } from "framer-motion"
-import { ChevronRight, Filter } from "lucide-react"
-
+import { ChevronRight, Calendar, Tag, Users, Code, ExternalLink } from "lucide-react"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import PageHeader from "../components/PageHeader"
-import { projectsData } from "../data/projects"
-import { getThemePreference, setThemePreference } from '../utils/theme'
+import { useLanguage } from "../contexts/LanguageContext"
+import { getThemePreference, setThemePreference } from "../utils/theme"
+import type { Project } from "@/app/lib/supabase"
 
-// Import translations
-import { translations } from "../translations"
+// ProjectCard component for displaying individual projects
+const ProjectCard = ({ project, language }: { project: Project, language: string }) => {
+  // Format date helper function
+  const formatDate = (dateString: string, lang: string) => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return date.toLocaleDateString(lang === 'fr' ? 'fr-FR' : 'en-US', options);
+  };
+
+  return (
+    <div className="bg-white dark:bg-[#28384d]/80 rounded-lg overflow-hidden shadow-lg transition-transform duration-300 hover:scale-[1.02] hover:shadow-xl border border-gray-100 dark:border-white/5">
+      <div className="relative h-56 w-full">
+        {project.image_url ? (
+          <Image 
+            src={project.image_url} 
+            alt={project.title}
+            fill
+            className="object-cover"
+          />
+        ) : (
+          <div className="bg-gray-100 dark:bg-[#00adb5]/20 h-full w-full flex items-center justify-center">
+            <span className="text-gray-500 dark:text-[#00adb5]">{language === 'fr' ? 'Pas d\'image' : 'No image'}</span>
+          </div>
+        )}
+      </div>
+      
+      <div className="p-5">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">{project.title}</h3>
+        <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">{project.description}</p>
+        
+        <div className="flex flex-wrap gap-y-2 text-sm mb-4">
+          {project.client && (
+            <div className="flex items-center text-gray-600 dark:text-gray-300 mr-4">
+              <Users size={16} className="text-[#00adb5] mr-2" />
+              <span>{project.client}</span>
+            </div>
+          )}
+          
+          {project.technologies && (
+            <div className="flex items-center text-gray-600 dark:text-gray-300 mr-4">
+              <Code size={16} className="text-[#fccd11] mr-2" />
+              <span>{project.technologies}</span>
+            </div>
+          )}
+          
+          {project.created_at && (
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
+              <Calendar size={16} className="text-[#00adb5] mr-2" />
+              <span>{formatDate(project.created_at, language)}</span>
+            </div>
+          )}
+        </div>
+        
+        <Link 
+          href={`/projects/${project.slug}`}
+          className="inline-flex items-center px-4 py-2 bg-[#00adb5] text-white rounded-md hover:bg-[#00adb5]/90 transition-colors"
+        >
+          <span>{language === 'fr' ? 'Voir le projet' : 'View project'}</span>
+          <ExternalLink size={16} className="ml-2" />
+        </Link>
+      </div>
+    </div>
+  );
+};
 
 export default function ProjectsPage() {
+  // Initialize state variables
+  const [projects, setProjects] = useState<Project[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState<"fr" | "en">("fr")
-  const [activeCategory, setActiveCategory] = useState<string>("all")
-  const [filteredProjects, setFilteredProjects] = useState<any[]>([])
+  const { language, setLanguage } = useLanguage()
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  
+  const supabase = createClientComponentClient()
 
-  // Get translations based on current language
-  const t = translations[language]
+  // Extract unique categories from projects
+  const categories = [...new Set(projects.map(project => project.category).filter(Boolean))] as string[];
 
-  // Initialize theme on mount
+  // Filter projects based on selected category
+  const filteredProjects = selectedCategory 
+    ? projects.filter(project => project.category === selectedCategory)
+    : projects;
+
   useEffect(() => {
+    fetchProjects()
+    
+    // Initialize dark mode
     const theme = getThemePreference()
     setDarkMode(theme === 'dark')
     setThemePreference(theme)
+    
+    return () => {
+      // Don't remove on unmount - let other components manage this
+    }
   }, [])
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const newTheme = !prev ? 'dark' : 'light'
-      setThemePreference(newTheme)
-      return !prev
-    })
-  }
-
-  // Set language
-  const toggleLanguage = (lang: "fr" | "en") => {
-    setLanguage(lang)
-    // Reset category when language changes to avoid mismatches
-    setActiveCategory("all")
-  }
 
   // Apply dark mode class to html element
   useEffect(() => {
@@ -56,320 +122,145 @@ export default function ProjectsPage() {
     }
   }, [darkMode])
 
-  // Get current projects based on language
-  const currentProjects = projectsData[language]
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const newTheme = !prev ? 'dark' : 'light'
+      setThemePreference(newTheme)
+      return !prev
+    })
+  }
 
-  // Get unique categories
-  const categories = (() => {
-    const allCategories = currentProjects.map((project) => project.category)
-    const uniqueCategories = Array.from(new Set(allCategories))
-    return [language === "fr" ? "Tous" : "All", ...uniqueCategories]
-  })()
-
-  // Filter projects when language or category changes
-  useEffect(() => {
-    if (
-      activeCategory === "all" ||
-      (language === "fr" && activeCategory === "Tous") ||
-      (language === "en" && activeCategory === "All")
-    ) {
-      setFilteredProjects(currentProjects)
-    } else {
-      setFilteredProjects(currentProjects.filter((project) => project.category === activeCategory))
+  const fetchProjects = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("projects")
+        .select("*")
+        .order("created_at", { ascending: false })
+      
+      if (error) throw error
+      setProjects(data || [])
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-  }, [activeCategory, language, currentProjects])
-
-  // Handle category selection
-  const handleCategoryChange = (category: string) => {
-    setActiveCategory(category)
   }
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+  const toggleLanguage = (lang?: "fr" | "en") => {
+    setLanguage(lang || (language === "fr" ? "en" : "fr"))
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12,
-      },
-    },
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#28384d] transition-colors duration-300">
+        <div className="w-12 h-12 border-4 border-gray-200 dark:border-[#00adb5]/30 border-t-gray-600 dark:border-t-[#00adb5] rounded-full animate-spin"></div>
+      </div>
+    )
   }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#28384d] pt-32 pb-20 transition-colors duration-300">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-white p-4 rounded-lg max-w-xl mx-auto">
+            <p>{error}</p>
+            <button 
+              onClick={fetchProjects}
+              className="mt-4 px-4 py-2 bg-[#00adb5] text-white rounded-md hover:bg-[#00adb5]/90 transition-colors"
+            >
+              {language === "fr" ? "Réessayer" : "Try Again"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // For the empty projects state
+  const EmptyState = () => (
+    <div className="bg-gray-50 dark:bg-[#28384d]/80 p-8 rounded-lg text-center shadow-sm border border-gray-100 dark:border-white/5">
+      <p className="text-gray-600 dark:text-white">
+        {language === 'fr' 
+          ? 'Aucun projet disponible pour le moment.' 
+          : 'No projects available at this time.'}
+      </p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-300">
-      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} language={language} toggleLanguage={toggleLanguage} />
-
-      <PageHeader
-        title={language === "fr" ? "Nos Projets" : "Our Projects"}
-        subtitle={
-          language === "fr"
-            ? "Explorez notre portfolio de projets réussis dans divers secteurs"
-            : "Explore our portfolio of successful projects across various industries"
-        }
+    <div className="min-h-screen bg-white dark:bg-[#28384d] transition-colors duration-300">
+      <Header 
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+        language={language}
+        toggleLanguage={toggleLanguage}
       />
-
-      {/* Projects Gallery */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-6">
-          {/* Category Filter */}
-          <div className="mb-16">
-            <motion.div
-              className="flex items-center justify-center mb-6"
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
-              <Filter className="h-5 w-5 text-secondary mr-2" />
-              <h3 className="text-lg font-medium">
-                {language === "fr" ? "Filtrer par Catégorie" : "Filter by Category"}
-              </h3>
-            </motion.div>
-            <motion.div
-              className="flex flex-wrap justify-center gap-4"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {categories.map((category, index) => (
-                <motion.button
-                  key={index}
-                  variants={itemVariants}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    (category === "Tous" && activeCategory === "Tous") ||
-                    (category === "All" && activeCategory === "All") ||
-                    (activeCategory === category)
-                      ? "bg-secondary text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                  onClick={() => handleCategoryChange(category)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+      
+      {/* Hero Section */}
+      <div className="relative">
+        <div className="bg-gradient-to-b from-white via-white/95 to-white/90 dark:from-[#28384d] dark:via-[#28384d]/95 dark:to-[#28384d]/90 pt-40 pb-16 transition-colors duration-300">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+                {language === "fr" ? "Nos Projets" : "Our Projects"}
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                {language === "fr" 
+                  ? "Découvrez les projets innovants réalisés par ENIT Junior Enterprise, témoignant de notre expertise et de notre engagement envers l'excellence."
+                  : "Explore the innovative projects delivered by ENIT Junior Enterprise, showcasing our expertise and commitment to excellence."
+                }
+              </p>
+              
+              {/* Category Pills */}
+              <div className="flex flex-wrap justify-center gap-2 mt-6">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 
+                    ${!selectedCategory 
+                      ? 'bg-[#00adb5] text-white' 
+                      : 'bg-gray-100 dark:bg-[#28384d]/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#28384d]/80'
+                    }`}
                 >
-                  {category}
-                </motion.button>
-              ))}
-            </motion.div>
+                  {language === "fr" ? "Tous" : "All"}
+                </button>
+                
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 
+                      ${selectedCategory === category 
+                        ? 'bg-[#00adb5] text-white' 
+                        : 'bg-gray-100 dark:bg-[#28384d]/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#28384d]/80'
+                      }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Projects Grid */}
-          <motion.div
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-          >
-            {filteredProjects.map((project, index) => (
-              <motion.div
-                key={project.id}
-                variants={itemVariants}
-                className="bg-white rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-secondary/20"
-                whileHover={{ y: -10, scale: 1.02 }}
-              >
-                <div className="relative overflow-hidden">
-                  <Image
-                    src={project.image || "/placeholder.svg"}
-                    alt={project.title}
-                    width={600}
-                    height={400}
-                    className="w-full h-48 object-cover transition-transform duration-500 hover:scale-110"
-                  />
-                  <div className="absolute top-0 right-0 bg-secondary text-white text-xs font-bold px-3 py-1 m-2 rounded-full">
-                    {project.category}
-                  </div>
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 flex items-end"
-                    whileHover={{ opacity: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <span className="text-white p-4 font-medium">
-                      {language === "fr" ? "Voir le Projet" : "View Project"}
-                    </span>
-                  </motion.div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-2 text-navy">{project.title}</h3>
-                  <p className="text-gray-600 mb-4">{project.description}</p>
-                  <Link
-                    href={`/projects/${project.id}`}
-                    className="text-secondary hover:text-secondary-dark transition-colors duration-300 flex items-center group"
-                  >
-                    {language === "fr" ? "Voir les détails" : "View Details"}
-                    <motion.div
-                      initial={{ x: 0 }}
-                      whileHover={{ x: 5 }}
-                      transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                    >
-                      <ChevronRight className="ml-2 h-4 w-4" />
-                    </motion.div>
-                  </Link>
-                </div>
-              </motion.div>
+      <div className="container mx-auto px-4 sm:px-6 py-12">
+        {/* Projects Grid */}
+        {filteredProjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProjects.map(project => (
+              <ProjectCard 
+                key={project.id} 
+                project={project} 
+                language={language}
+              />
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-16 md:py-24 bg-gray-50">
-        <div className="container mx-auto px-6">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-block bg-secondary/10 px-4 py-1 rounded-full mb-4">
-              <span className="text-secondary font-medium tracking-widest text-sm">
-                {language === "fr" ? "TÉMOIGNAGES" : "TESTIMONIALS"}
-              </span>
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold gradient-text mb-6">
-              {language === "fr" ? "Ce Que Disent Nos Clients" : "What Our Clients Say"}
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              {language === "fr"
-                ? "Ne vous fiez pas seulement à notre parole. Voici ce que nos clients disent de leur collaboration avec ENIT Junior Entreprise."
-                : "Don't just take our word for it. Here's what our clients have to say about working with ENIT Junior Entreprise."}
-            </p>
-          </motion.div>
-
-          <motion.div
-            className="grid md:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            {(language === "fr"
-              ? [
-                  {
-                    quote:
-                      "Travailler avec ENIT Junior Entreprise a été une expérience fantastique. L'équipe était professionnelle, réactive et a livré une solution de haute qualité qui a dépassé nos attentes.",
-                    author: "Ahmed Benali",
-                    company: "TechSolutions Inc.",
-                    image: "/placeholder.svg?height=100&width=100",
-                  },
-                  {
-                    quote:
-                      "Les étudiants d'ENIT Junior Entreprise ont apporté des perspectives fraîches et des idées innovantes à notre projet. Leur expertise technique et leur enthousiasme ont fait toute la différence.",
-                    author: "Leila Mansour",
-                    company: "GreenEnergy Ltd.",
-                    image: "/placeholder.svg?height=100&width=100",
-                  },
-                  {
-                    quote:
-                      "Nous avons été impressionnés par le professionnalisme et le dévouement de l'équipe d'ENIT Junior Entreprise. Ils ont livré notre projet dans les délais et dans le budget, avec d'excellents résultats.",
-                    author: "Karim Hadjeri",
-                    company: "Global Logistics",
-                    image: "/placeholder.svg?height=100&width=100",
-                  },
-                ]
-              : [
-                  {
-                    quote:
-                      "Working with ENIT Junior Entreprise was a fantastic experience. The team was professional, responsive, and delivered a high-quality solution that exceeded our expectations.",
-                    author: "Ahmed Benali",
-                    company: "TechSolutions Inc.",
-                    image: "/placeholder.svg?height=100&width=100",
-                  },
-                  {
-                    quote:
-                      "The students at ENIT Junior Entreprise brought fresh perspectives and innovative ideas to our project. Their technical expertise and enthusiasm made all the difference.",
-                    author: "Leila Mansour",
-                    company: "GreenEnergy Ltd.",
-                    image: "/placeholder.svg?height=100&width=100",
-                  },
-                  {
-                    quote:
-                      "We were impressed by the professionalism and dedication of the ENIT Junior Entreprise team. They delivered our project on time and within budget, with excellent results.",
-                    author: "Karim Hadjeri",
-                    company: "Global Logistics",
-                    image: "/placeholder.svg?height=100&width=100",
-                  },
-                ]
-            ).map((testimonial, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                className="bg-white p-8 rounded-lg shadow-lg relative"
-                whileHover={{ y: -5, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)" }}
-              >
-                <div className="absolute -top-5 -left-2 text-secondary text-6xl opacity-20">"</div>
-                <p className="text-gray-600 mb-6 relative z-10">{testimonial.quote}</p>
-                <div className="flex items-center">
-                  <Image
-                    src={testimonial.image || "/placeholder.svg"}
-                    alt={testimonial.author}
-                    width={50}
-                    height={50}
-                    className="rounded-full mr-4"
-                  />
-                  <div>
-                    <h4 className="font-bold text-navy">{testimonial.author}</h4>
-                    <p className="text-secondary text-sm">{testimonial.company}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Call to Action */}
-      <section className="py-16 bg-secondary text-white">
-        <div className="container mx-auto px-6">
-          <motion.div
-            className="text-center"
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">
-              {language === "fr" ? "Prêt à Démarrer Votre Projet ?" : "Ready to Start Your Project?"}
-            </h2>
-            <p className="text-lg mb-8 max-w-2xl mx-auto">
-              {language === "fr"
-                ? "Collaborons pour donner vie à vos idées. Notre équipe d'étudiants talentueux est prête à vous aider à réussir."
-                : "Let's collaborate to bring your ideas to life. Our team of talented students is ready to help you succeed."}
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  href="/contact"
-                  className="px-8 py-3 bg-white text-secondary rounded-full hover:bg-gray-100 transition-all duration-300 shadow-lg inline-block"
-                >
-                  {language === "fr" ? "Contactez-Nous" : "Get in Touch"}
-                </Link>
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Link
-                  href="/contact?type=quote"
-                  className="px-8 py-3 border-2 border-white text-white rounded-full hover:bg-white hover:text-secondary transition-all duration-300 shadow-lg inline-block"
-                >
-                  {language === "fr" ? "Demander un Devis" : "Request a Quote"}
-                </Link>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <Footer language={language} toggleLanguage={toggleLanguage} />
+          </div>
+        ) : (
+          <EmptyState />
+        )}
+      </div>
+      
+      <Footer />
     </div>
   )
 }

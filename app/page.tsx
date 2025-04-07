@@ -21,6 +21,7 @@ import {
   FolderKanban,
   Calendar,
   ChevronRight,
+  ChevronUp,
 } from "lucide-react"
 import { motion, useScroll, useTransform, LazyMotion, domAnimation } from "framer-motion"
 import { useLanguage } from "./contexts/LanguageContext"
@@ -798,13 +799,15 @@ function useDebounce<T>(value: T, delay?: number): T {
   return debouncedValue
 }
 
-// Fixed ClientsSection component
+// Fixed ClientsSection component with improved scrolling
 const ClientsSection = () => {
   const { language, translations } = useLanguage()
   const [isDragging, setIsDragging] = useState(false)
   const [startX, setStartX] = useState(0)
   const [scrollLeft, setScrollLeft] = useState(0)
   const sliderRef = useRef<HTMLDivElement>(null)
+  const prefersReducedMotion = useReducedMotion()
+  const autoScrollRef = useRef<any>(null) // For auto-scrolling animation
 
   const logos = [
     "/images/companies/logo1.webp",
@@ -832,30 +835,82 @@ const ClientsSection = () => {
     "/images/companies/logo23.webp",
   ]
 
-  // Create a duplicated array for infinite scroll effect
-  const duplicatedLogos = [...logos, ...logos]
+  // Create duplicated array for infinite scroll effect
+  const duplicatedLogos = [...logos, ...logos, ...logos]
+
+  // Set up auto-scrolling animation
+  useEffect(() => {
+    if (prefersReducedMotion || !sliderRef.current) return
+    
+    const scroll = () => {
+      if (!sliderRef.current || isDragging) return
+      
+      // Increment the scroll position
+      sliderRef.current.scrollLeft += 1
+      
+      // Reset when we reach a certain threshold to create infinite scrolling effect
+      if (sliderRef.current.scrollLeft >= sliderRef.current.scrollWidth / 3) {
+        sliderRef.current.scrollLeft = 1
+      }
+      
+      autoScrollRef.current = requestAnimationFrame(scroll)
+    }
+    
+    autoScrollRef.current = requestAnimationFrame(scroll)
+    
+    return () => {
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current)
+      }
+    }
+  }, [prefersReducedMotion, isDragging])
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!sliderRef.current) return
     setIsDragging(true)
     setStartX(e.pageX - sliderRef.current.offsetLeft)
     setScrollLeft(sliderRef.current.scrollLeft)
-    sliderRef.current.classList.add("pause")
+    
+    // Stop auto-scrolling when manually scrolling
+    if (autoScrollRef.current) {
+      cancelAnimationFrame(autoScrollRef.current)
+    }
+    
+    // Change cursor style
+    if (sliderRef.current) {
+      sliderRef.current.style.cursor = 'grabbing'
+    }
   }
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!isDragging || !sliderRef.current) return
     e.preventDefault()
     const x = e.pageX - sliderRef.current.offsetLeft
-    const walk = (x - startX) * 2 // Adjust scrolling speed
+    const walk = (x - startX) * 2 // Scroll speed multiplier
     sliderRef.current.scrollLeft = scrollLeft - walk
   }
 
   const handleMouseUp = () => {
     setIsDragging(false)
+    
+    // Reset cursor
     if (sliderRef.current) {
-      sliderRef.current.classList.remove("pause")
+      sliderRef.current.style.cursor = 'grab'
     }
+    
+    // Resume auto-scrolling after a brief pause
+    setTimeout(() => {
+      if (!prefersReducedMotion && !isDragging && sliderRef.current) {
+        autoScrollRef.current = requestAnimationFrame(function scroll() {
+          if (!sliderRef.current || isDragging) return
+          sliderRef.current.scrollLeft += 1
+          if (sliderRef.current.scrollLeft >= sliderRef.current.scrollWidth / 3) {
+            sliderRef.current.scrollLeft = 1
+          }
+          autoScrollRef.current = requestAnimationFrame(scroll)
+        })
+      }
+    }, 100)
   }
 
   const handleMouseLeave = () => {
@@ -869,7 +924,11 @@ const ClientsSection = () => {
     setIsDragging(true)
     setStartX(e.touches[0].pageX - sliderRef.current.offsetLeft)
     setScrollLeft(sliderRef.current.scrollLeft)
-    sliderRef.current.classList.add("pause")
+    
+    // Stop auto-scrolling when manually scrolling
+    if (autoScrollRef.current) {
+      cancelAnimationFrame(autoScrollRef.current)
+    }
   }
 
   const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -879,33 +938,33 @@ const ClientsSection = () => {
     sliderRef.current.scrollLeft = scrollLeft - walk
   }
 
-  const handleTouchEnd = () => {
-    handleMouseUp()
-  }
-
   return (
     <section className="py-16 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">{translations.clients.title}</h2>
-          <p className="text-gray-600 dark:text-gray-400">{translations.clients.subtitle}</p>
+          <p className="text-gray-600 dark:text-gray-300">{translations.clients.subtitle}</p>
         </div>
 
         <div className="relative w-full overflow-hidden">
           {/* Gradient masks for smooth fade effect */}
-          <div className="absolute left-0 top-0 bottom-0 w-12 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none"></div>
-          <div className="absolute right-0 top-0 bottom-0 w-12 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none"></div>
+          <div className="absolute left-0 top-0 bottom-0 w-16 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none"></div>
+          <div className="absolute right-0 top-0 bottom-0 w-16 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none"></div>
 
           <div
             ref={sliderRef}
-            className="flex animate-scroll hover-pause:pause space-x-12 overflow-x-auto scrollbar-hide will-change-transform cursor-grab"
+            className="flex space-x-12 overflow-x-auto scrollbar-hide will-change-transform cursor-grab"
+            style={{
+              scrollBehavior: 'auto',
+              WebkitOverflowScrolling: 'touch',
+            }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
+            onTouchEnd={handleMouseUp}
           >
             {duplicatedLogos.map((logo, index) => (
               <div
@@ -915,7 +974,7 @@ const ClientsSection = () => {
               >
                 <Image
                   src={logo || "/placeholder.svg"}
-                  alt={`Client logo ${index + 1}`}
+                  alt={`Client logo ${index % logos.length + 1}`}
                   width={160}
                   height={80}
                   className="max-h-[80px] w-auto object-contain filter drop-shadow-md transition-all duration-300 hover:scale-110"
@@ -928,6 +987,50 @@ const ClientsSection = () => {
         </div>
       </div>
     </section>
+  )
+}
+
+// Add the scroll-to-top button component near the top of the file, after other components
+const ScrollToTopButton = () => {
+  const [isVisible, setIsVisible] = useState(false)
+
+  // Show button when user scrolls down 300px
+  useEffect(() => {
+    const toggleVisibility = () => {
+      if (window.scrollY > 300) {
+        setIsVisible(true)
+      } else {
+        setIsVisible(false)
+      }
+    }
+
+    window.addEventListener("scroll", toggleVisibility)
+    return () => window.removeEventListener("scroll", toggleVisibility)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth"
+    })
+  }
+
+  return (
+    <>
+      {isVisible && (
+        <motion.button
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.3 }}
+          onClick={scrollToTop}
+          className="fixed z-50 bottom-6 right-6 p-3 rounded-full bg-navy dark:bg-white text-white dark:text-navy shadow-lg transition-all duration-300 hover:shadow-xl"
+          aria-label="Scroll to top"
+        >
+          <ChevronUp className="h-6 w-6" />
+        </motion.button>
+      )}
+    </>
   )
 }
 
@@ -960,6 +1063,13 @@ export default function Home() {
     const theme = getThemePreference()
     setDarkMode(theme === "dark")
     setThemePreference(theme)
+    
+    // Apply dark mode to document element for better compatibility
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
   }, [])
 
   // Memoized toggle function
@@ -967,6 +1077,14 @@ export default function Home() {
     setDarkMode((prev) => {
       const newTheme = !prev ? "dark" : "light"
       setThemePreference(newTheme)
+      
+      // Update document element class for better theme consistency
+      if (newTheme === "dark") {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
+      
       return !prev
     })
   }, [])
@@ -1008,7 +1126,7 @@ export default function Home() {
     setIsIntersecting(isIntersecting)
   })
 
-  // Preload components on mount and load translations
+  // Fix for the translations loading function
   useEffect(() => {
     setIsLoaded(true)
 
@@ -1020,11 +1138,19 @@ export default function Home() {
       import("./translations")
         .then((module) => {
           if (module.translations && module.translations[language]) {
-            // Merge with default translations to ensure all properties exist
-            setT({
+            // Ensure all required properties exist by merging with default translations
+            const mergedTranslations = {
               ...defaultTranslations[language],
               ...module.translations[language],
-            })
+            };
+            
+            // Make sure the hero scrollDown property exists
+            if (mergedTranslations.hero && !mergedTranslations.hero.scrollDown) {
+              mergedTranslations.hero.scrollDown = defaultTranslations[language].hero.scrollDown;
+            }
+            
+            // Now it should satisfy the TranslationType
+            setT(mergedTranslations as TranslationType);
           }
         })
         .catch((err) => {
@@ -1194,7 +1320,7 @@ export default function Home() {
             />
           </Suspense>
 
-          {/* Hero Section */}
+          {/* Hero Section with navy overlay in dark mode */}
           <section id="hero" className="relative min-h-[100svh] flex items-center justify-center overflow-hidden">
             {/* Background image with overlay */}
             <div className="absolute inset-0 z-0">
@@ -1329,8 +1455,8 @@ export default function Home() {
             </motion.div>
           </section>
 
-          {/* Features Section */}
-          <section id="features" className="py-12 sm:py-16 md:py-20 relative bg-white dark:bg-navy/90">
+          {/* Features Section - Navy background in dark mode */}
+          <section id="features" className="py-12 sm:py-16 md:py-20 relative bg-white dark:bg-navy">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <div className="flex flex-col md:flex-row gap-8 md:gap-12">
                 {/* Features content - Full width on mobile, half width on desktop */}
@@ -1496,8 +1622,8 @@ export default function Home() {
             </div>
           </section>
 
-          {/* Statistics Section with Animated Numbers */}
-          <AnimatedSection className="py-12 sm:py-16 md:py-20 relative overflow-hidden bg-gray-50 dark:bg-navy/80">
+          {/* Statistics Section - Navy background in dark mode */}
+          <AnimatedSection className="py-12 sm:py-16 md:py-20 relative overflow-hidden bg-gray-50 dark:bg-navy">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <motion.div
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 md:gap-8"
@@ -1549,8 +1675,8 @@ export default function Home() {
             </div>
           </AnimatedSection>
 
-          {/* About Section with Values */}
-          <AnimatedSection className="py-16 md:py-20 relative bg-white dark:bg-navy/90">
+          {/* About Section - Navy background in dark mode */}
+          <AnimatedSection className="py-16 md:py-20 relative bg-white dark:bg-navy">
             <div className="container mx-auto px-6">
               <div className="grid md:grid-cols-2 gap-8 items-start">
                 <div className="relative">
@@ -1694,8 +1820,8 @@ export default function Home() {
               </div>
             </div>
           </AnimatedSection>
-          {/* Projects Section */}
-          <AnimatedSection className="py-12 sm:py-16 md:py-20 relative bg-gray-50 dark:bg-navy/80">
+          {/* Projects Section - Navy background in dark mode */}
+          <AnimatedSection className="py-12 sm:py-16 md:py-20 relative bg-gray-50 dark:bg-navy">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <ScrollRevealSection>
                 <div className="text-center mb-8 sm:mb-12">
@@ -1726,7 +1852,7 @@ export default function Home() {
                   {t.projects.items.map((project, index) => (
                     <motion.div
                       key={index}
-                      className="bg-white dark:bg-navy/50 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 border border-transparent hover:border-secondary/20 transform-gpu"
+                      className="bg-white dark:bg-navy/50 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 transform-gpu"
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
                       viewport={{ once: true }}
@@ -1862,30 +1988,30 @@ export default function Home() {
             </div>
           </AnimatedSection>
 
+          {/* Clients Section */}
+          <ClientsSection />
+          
           {/* Call to Action Section */}
-          <AnimatedSection className="py-12 sm:py-16 bg-secondary text-white">
+          <AnimatedSection className="py-12 sm:py-16 bg-gradient-to-r from-secondary to-secondary-dark dark:from-navy dark:to-navy-light text-white">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8">
               <motion.div
-                className="text-center max-w-4xl mx-auto"
+                className="text-center max-w-4xl mx-auto p-6 sm:p-8 bg-white/10 dark:bg-black/10 backdrop-blur-sm rounded-xl shadow-lg"
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6">{t.cta.title}</h2>
-                <p className="text-base sm:text-lg mb-6 sm:mb-8 max-w-2xl mx-auto px-4">{t.cta.description}</p>
+                <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-white">{t.cta.title}</h2>
+                <p className="text-base sm:text-lg mb-6 sm:mb-8 max-w-2xl mx-auto px-4 text-white/90">{t.cta.description}</p>
                 <Link
                   href="/contact"
-                  className="inline-block px-6 sm:px-8 py-3 bg-white text-secondary rounded-full hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base"
+                  className="inline-block px-6 sm:px-8 py-3 bg-white text-secondary dark:bg-navy-light dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-navy transition-all duration-300 transform hover:scale-105 shadow-lg text-sm sm:text-base"
                 >
                   {t.cta.button}
                 </Link>
               </motion.div>
             </div>
           </AnimatedSection>
-
-          {/* Clients Section */}
-          <ClientsSection />
 
           {/* Footer Section */}
           <Footer />

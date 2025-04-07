@@ -4,36 +4,74 @@
 
 @import url("https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap");
 
-/* Update the root variables to support both light and dark modes */
+/* Update the root variables with enhanced dark mode colors */
 :root {
   --background: #ffffff;
   --foreground: #28384d;
   --primary: #28384d;
   --secondary: #00adb5;
+  --secondary-light: #3ec0c7;
+  --secondary-dark: #008a91;
   --accent: #fccd11;
   --text-primary: #000000;
   --text-secondary: #ffffff;
   --navy: #28384d;
   --navy-light: #3a4d68;
+  --card-bg: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.05);
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-color-strong: rgba(0, 0, 0, 0.15);
 }
 
 .dark {
-  --background: #28384d;
-  --foreground: #ffffff;
-  --primary: #ffffff;
+  --background: #1a2435;
+  --foreground: #f0f4f8;
+  --primary: #f0f4f8;
   --secondary: #00adb5;
+  --secondary-light: #3ec0c7;
+  --secondary-dark: #008a91;
   --accent: #fccd11;
   --text-primary: #ffffff;
   --text-secondary: #28384d;
-  --navy: #1c2736;
-  --navy-light: #28384d;
+  --navy: #28384d;
+  --navy-light: #3a4d68;
+  --card-bg: #28384d;
+  --card-border: rgba(255, 255, 255, 0.1);
+  --shadow-color: rgba(0, 0, 0, 0.25);
+  --shadow-color-strong: rgba(0, 0, 0, 0.35);
+}
+
+/* Base elements */
+html {
+  scroll-behavior: smooth;
+  overflow-x: hidden;
+  max-width: 100vw;
+  -webkit-tap-highlight-color: transparent;
+  height: 100%;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-montserrat), sans-serif;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.5s ease, color 0.5s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  width: 100%;
+  min-height: 100%;
+  position: relative;
+  /* Prevent flash of unstyled content */
+  opacity: 1 !important;
+  display: flex;
+  flex-direction: column;
+}
+
+#__next {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 h1,
@@ -46,6 +84,16 @@ h6 {
   font-weight: 700;
   color: var(--primary);
   transition: color 0.3s ease;
+  margin-top: 0;
+}
+
+a {
+  color: var(--secondary);
+  transition: color 0.3s ease;
+}
+
+a:hover {
+  color: var(--secondary-light);
 }
 
 @layer utilities {
@@ -54,13 +102,15 @@ h6 {
   }
 }
 
-/* Custom scrollbar */
+/* Improved Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
   background: rgba(40, 56, 77, 0.05);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -72,12 +122,7 @@ h6 {
   background: rgba(0, 173, 181, 0.8);
 }
 
-/* Smooth scrolling for the entire page */
-html {
-  scroll-behavior: smooth;
-}
-
-/* Animation utilities */
+/* Enhanced Animation utilities */
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -92,6 +137,26 @@ html {
   100% {
     transform: translateY(0px);
   }
+}
+
+/* Optimized infinite scroll animation for client logos */
+@keyframes scroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-scroll {
+  animation: scroll 30s linear infinite;
+}
+
+/* Add pause on hover for auto-scrolling elements */
+.animate-scroll:hover,
+.animate-scroll.pause {
+  animation-play-state: paused;
 }
 
 /* Enhanced gradient text with better visibility in both modes */
@@ -126,13 +191,12 @@ html {
   }
 }
 
-/* Add dark mode specific gradient text */
+/* Improved dark mode specific gradient text */
 .dark .gradient-text {
-  background: linear-gradient(45deg, var(--accent), var(--secondary));
+  background: linear-gradient(45deg, var(--secondary-light), var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-shadow: 0px 0px 2px rgba(0, 0, 0, 0.2);
   filter: drop-shadow(0px 2px 2px rgba(0, 0, 0, 0.2));
 }
 
@@ -168,6 +232,19 @@ html {
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
+/* Enhanced card styling for dark mode */
+.card {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 4px 12px var(--shadow-color);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 16px var(--shadow-color-strong);
+  transform: translateY(-3px);
+}
+
 /* Clean, minimalist design elements */
 .clean-backdrop {
   background-color: rgba(255, 255, 255, 0.08);
@@ -193,11 +270,13 @@ html {
 /* Card hover effects */
 .service-card {
   transition: all 0.3s ease;
+  transform: translateZ(0); /* Force GPU acceleration */
+  will-change: transform; /* Hint for browser optimization */
 }
 
 .service-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 10px 25px -5px var(--shadow-color), 0 10px 10px -5px var(--shadow-color);
 }
 
 /* Button animations */
@@ -205,6 +284,8 @@ html {
   position: relative;
   overflow: hidden;
   transition: all 0.3s ease;
+  transform: translateZ(0); /* Force GPU acceleration */
+  will-change: transform; /* Hint for browser optimization */
 }
 
 .btn-primary::after {
@@ -238,10 +319,283 @@ html {
   background-color: rgba(40, 56, 77, 0.3);
 }
 
-/* Add this to your existing globals.css */
+/* Improved font classes */
 .font-handwriting {
   font-family: "Dancing Script", cursive;
 }
 
-/* Rest of your CSS */
+/* Enhanced loading behavior */
+.content-visibility-auto {
+  content-visibility: auto;
+}
+
+/* Prevent layout shifts */
+.image-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.image-container img {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.image-container:hover img {
+  transform: scale(1.05);
+}
+
+/* Improved Responsive Rules */
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+  
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Adjust spacing for mobile */
+  section {
+    padding-top: 2.5rem;
+    padding-bottom: 2.5rem;
+  }
+  
+  /* Improve mobile performance */
+  .transform-gpu,
+  .animate-scroll {
+    will-change: auto;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 768px) {
+  html {
+    font-size: 15px;
+  }
+  
+  /* Adjust spacing for tablets */
+  section {
+    padding-top: 3rem;
+    padding-bottom: 3rem;
+  }
+}
+
+@media (min-width: 769px) {
+  html {
+    font-size: 16px;
+  }
+  
+  /* Adjust spacing for desktop */
+  section {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+  }
+}
+
+/* Fix for Safari and iOS */
+@supports (-webkit-touch-callout: none) {
+  .h-screen {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Better handle overflow content */
+.overflow-x-hidden {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Preloading critical resources for better performance */
+body::after {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  z-index: -1;
+  content: url(/images/companies/logo1.webp) url(/images/companies/logo2.webp) url(/images/companies/logo3.webp);
+}
+
+/* Reduce motion when explicitly requested */
+@media (prefers-reduced-motion: reduce) {
+  .animate-float,
+  .animate-scroll,
+  .animate-scroll.pause,
+  .main-gradient-text {
+    animation: none !important;
+  }
+  
+  .transition-all,
+  .transition-transform,
+  .transition-opacity {
+    transition: none !important;
+  }
+  
+  html {
+    scroll-behavior: auto !important;
+  }
+}
+
+/* GPU acceleration for all important animations */
+.transform-gpu,
+.animate-scroll,
+.transition-all,
+.animate-float,
+.animate-scroll.pause {
+  will-change: transform;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+}
+
+/* Hide scrollbar while preserving functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Optimize for touch devices */
+@media (hover: none) {
+  .cursor-grab {
+    cursor: default !important;
+  }
+}
+
+/* Article content styling */
+.article-content {
+  /* Default styles */
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.article-content h1,
+.article-content h2,
+.article-content h3,
+.article-content h4,
+.article-content h5,
+.article-content h6 {
+  color: white;
+  margin-top: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.article-content h1 {
+  font-size: 2.25rem;
+  border-bottom: 2px solid rgba(0, 173, 181, 0.3);
+  padding-bottom: 0.5rem;
+}
+
+.article-content h2 {
+  font-size: 1.875rem;
+}
+
+.article-content h3 {
+  font-size: 1.5rem;
+}
+
+.article-content p {
+  margin-bottom: 1.25em;
+  line-height: 1.7;
+}
+
+.article-content a {
+  color: #00adb5;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.article-content a:hover {
+  color: rgba(0, 173, 181, 0.8);
+}
+
+.article-content ul,
+.article-content ol {
+  margin: 1.25em 0;
+  padding-left: 2em;
+}
+
+.article-content li {
+  margin-bottom: 0.5em;
+}
+
+.article-content blockquote {
+  border-left: 4px solid #00adb5;
+  padding: 1em;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0 0.375rem 0.375rem 0;
+  margin: 1.5em 0;
+  color: rgba(255, 255, 255, 0.8);
+  font-style: italic;
+}
+
+.article-content pre {
+  background-color: rgba(40, 56, 77, 0.8);
+  padding: 1em;
+  border-radius: 0.375rem;
+  overflow-x: auto;
+  margin: 1.5em 0;
+}
+
+.article-content code {
+  background-color: rgba(40, 56, 77, 0.6);
+  padding: 0.2em 0.4em;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+
+.article-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1.5em 0;
+}
+
+.article-content hr {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 2em 0;
+}
+
+.article-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5em 0;
+}
+
+.article-content th {
+  background-color: rgba(0, 173, 181, 0.2);
+  color: white;
+  font-weight: 600;
+  text-align: left;
+}
+
+.article-content td,
+.article-content th {
+  padding: 0.75em;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.article-content tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.03);
+}
+
+.article-content tr:hover {
+  background-color: rgba(0, 173, 181, 0.1);
+}
+
+/* Highlight text */
+.article-content mark {
+  background-color: rgba(252, 205, 17, 0.3);
+  color: white;
+  padding: 0 0.25em;
+}
+
+/* Special styling for figure captions */
+.article-content figcaption {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+  text-align: center;
+  margin-top: 0.5em;
+  font-style: italic;
+}
 

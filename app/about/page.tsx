@@ -25,9 +25,12 @@ import {
   Phone,
   Target,
   Heart,
-  GraduationCap
+  GraduationCap,
+  ChevronLeft,
+  ImageIcon
 } from "lucide-react"
 import Link from "next/link"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 
 import Header from "../components/Header"
 import Footer from "../components/Footer"
@@ -62,6 +65,10 @@ export default function AboutPage() {
   const [activeSection, setActiveSection] = useState("story")
   const [isMobile, setIsMobile] = useState(false)
   const [scrollY, setScrollY] = useState(0)
+  const [gallery, setGallery] = useState<any[]>([])
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const supabase = createClientComponentClient()
 
   // Refs for scroll animations
   const heroRef = useRef<HTMLDivElement>(null)
@@ -529,6 +536,34 @@ export default function AboutPage() {
     },
   ]
 
+  useEffect(() => {
+    fetchGallery()
+  }, [])
+
+  const fetchGallery = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('gallery')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+      setGallery(data || [])
+    } catch (error) {
+      console.error('Error fetching gallery:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % gallery.length)
+  }
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + gallery.length) % gallery.length)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-navy text-navy dark:text-white overflow-x-hidden transition-colors duration-300">
       <style jsx global>{`
@@ -885,6 +920,10 @@ export default function AboutPage() {
                   <Link
                     href="#team"
                     className="w-full px-4 sm:px-5 md:px-8 py-2.5 sm:py-3 md:py-4 bg-navy/80 dark:bg-white/10 text-white border border-white/30 rounded-full hover:bg-navy/90 dark:hover:bg-white/20 transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg font-medium text-sm sm:text-base improve-touch-target"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById('team')?.scrollIntoView({ behavior: 'smooth' });
+                    }}
                   >
                     {language === "fr" ? "Notre Équipe" : "Our Team"}
                     <Users className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1500,8 +1539,12 @@ export default function AboutPage() {
           <div className="text-center mt-6 sm:mt-8 md:mt-12">
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
               <Link
-                href="/team"
+                href="#team"
                 className="px-4 sm:px-6 md:px-8 py-2.5 sm:py-3 bg-turquoise text-white rounded-full hover:bg-turquoise/90 transition-all duration-300 inline-flex items-center shadow-md hover:shadow-xl improve-touch-target"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById('team')?.scrollIntoView({ behavior: 'smooth' });
+                }}
               >
                 <span className="text-sm sm:text-base">
                   {language === "fr" ? "Voir toute l'équipe" : "View full team"}
@@ -1513,57 +1556,141 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Gallery - Enhanced for better responsiveness */}
-      <section
-        id="gallery"
-        ref={galleryRef}
-        className="py-12 sm:py-16 md:py-24 bg-white dark:bg-navy transition-colors duration-300"
-      >
-        <div className="container mx-auto px-4 md:px-8">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-navy dark:text-white mb-3 sm:mb-4 transition-colors duration-300 sm-text-balance">
-              {language === "fr" ? "Notre Galerie" : "Our Gallery"}
-            </h2>
-            <p className="text-gray-700 dark:text-gray-200 max-w-3xl mx-auto text-sm sm:text-base md:text-lg transition-colors duration-300 sm-text-balance">
-              {language === "fr"
-                ? "Quelques moments exceptionnels capturés au cours de nos événements et activités."
-                : "Some exceptional moments captured during our events and activities."}
-            </p>
+      {/* Gallery Section */}
+      <section className="py-16 bg-gray-50 dark:bg-navy relative overflow-hidden" id="gallery" ref={galleryRef}>
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-turquoise/20 to-transparent"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-turquoise/5 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-navy/5 dark:bg-turquoise/5 rounded-full blur-3xl"></div>
+        
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+            >
+              <div className="inline-block bg-turquoise/10 px-3 sm:px-4 py-1 rounded-full mb-3 sm:mb-4 transform transition-transform duration-300 hover:scale-105">
+                <span className="text-turquoise font-medium tracking-widest text-xs sm:text-sm">
+                  {language === "fr" ? "NOTRE GALERIE" : "OUR GALLERY"}
+                </span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4 text-navy dark:text-white sm-text-balance">
+                {language === "fr" ? "Moments Capturés" : "Captured Moments"}
+              </h2>
+              <p className="text-gray-700 dark:text-gray-200 max-w-2xl mx-auto text-sm sm:text-base sm-text-balance">
+                {language === "fr"
+                  ? "Découvrez les moments exceptionnels de nos événements et activités à travers notre galerie d'images."
+                  : "Discover exceptional moments from our events and activities through our image gallery."}
+              </p>
+            </motion.div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <motion.div
-                key={index}
-                className="group relative overflow-hidden rounded-xl shadow-lg border border-transparent dark:border-turquoise/10 bg-white dark:bg-navy/60"
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true, margin: "-50px" }}
-                whileHover={{ y: -5 }}
-              >
-                <div className="aspect-[4/3] relative overflow-hidden">
-                  <Image
-                    src={`/images/gallery/image${index + 1}.jpg`}
-                    alt={`Gallery image ${index + 1}`}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-105 optimize-image-loading"
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-navy/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 md:p-6 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                    <h3 className="text-white text-base sm:text-lg md:text-xl font-semibold mb-1 sm:mb-2">
-                      {language === "fr" ? eventTitles_fr[index] : eventTitles[index]}
-                    </h3>
-                    <p className="text-white/90 text-xs sm:text-sm md:text-base">
-                      {language === "fr" ? eventDates_fr[index] : eventDates[index]}
-                    </p>
+          {loading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-turquoise"></div>
+            </div>
+          ) : gallery.length > 0 ? (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.7 }}
+              className="relative max-w-5xl mx-auto"
+            >
+              {/* Main Slider */}
+              <div className="relative h-[500px] sm:h-[600px] overflow-hidden rounded-xl shadow-2xl border border-white/30 dark:border-turquoise/20">
+                <img
+                  src={gallery[currentSlide]?.image_url}
+                  alt={gallery[currentSlide]?.title}
+                  className="w-full h-full object-cover transition-all duration-700 ease-in-out"
+                />
+                
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/5 flex items-end">
+                  <div className="w-full p-6 sm:p-8 md:p-10 text-white">
+                    <div className="max-w-4xl mx-auto">
+                      <motion.div
+                        key={currentSlide} 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.5 }}
+                      >
+                        <span className="inline-block bg-turquoise/80 text-white text-xs px-2 py-1 rounded-full mb-3">
+                          {gallery[currentSlide]?.category}
+                        </span>
+                        <h3 className="text-2xl sm:text-3xl font-bold mb-2 sm:mb-3">{gallery[currentSlide]?.title}</h3>
+                        <p className="text-white/90 text-sm sm:text-base md:text-lg max-w-3xl">{gallery[currentSlide]?.description}</p>
+                      </motion.div>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              </div>
+              
+              {/* Navigation Buttons */}
+              <motion.button
+                whileHover={{ scale: 1.1, backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={prevSlide}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/70 dark:bg-white/80 hover:bg-white p-3 rounded-full shadow-lg transition-all duration-300 z-10"
+                aria-label="Previous slide"
+              >
+                <ChevronLeft className="w-6 h-6 text-navy dark:text-navy" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1, backgroundColor: "rgba(255, 255, 255, 0.9)" }}
+                whileTap={{ scale: 0.95 }}
+                onClick={nextSlide}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/70 dark:bg-white/80 hover:bg-white p-3 rounded-full shadow-lg transition-all duration-300 z-10"
+                aria-label="Next slide"
+              >
+                <ChevronRight className="w-6 h-6 text-navy dark:text-navy" />
+              </motion.button>
+
+              {/* Thumbnails */}
+              <div className="mt-4 overflow-hidden">
+                <div className="flex gap-2 justify-center mt-4 pb-2 overflow-x-auto no-scrollbar">
+                  {gallery.map((item, index) => (
+                    <motion.button
+                      key={index}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setCurrentSlide(index)}
+                      className={`relative flex-shrink-0 w-16 h-16 sm:w-20 sm:h-20 rounded-md overflow-hidden transition-all duration-300 ${
+                        index === currentSlide ? 'ring-2 ring-turquoise ring-offset-2 dark:ring-offset-navy' : 'opacity-60 hover:opacity-100'
+                      }`}
+                    >
+                      <img 
+                        src={item.image_url} 
+                        alt={`Thumbnail ${index + 1}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Indicator Dots - Only on small screens */}
+              <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 flex space-x-2 sm:hidden">
+                {gallery.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentSlide ? 'bg-turquoise w-4' : 'bg-gray-400/50 dark:bg-white/50'
+                    }`}
+                    aria-label={`Go to slide ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          ) : (
+            <div className="text-center text-gray-500 dark:text-gray-400 py-16">
+              <ImageIcon className="w-16 h-16 mx-auto mb-4 opacity-30" />
+              <p className="text-lg">No images in the gallery yet.</p>
+            </div>
+          )}
         </div>
       </section>
 

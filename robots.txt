@@ -1,7 +1,22 @@
-# Allow all crawlers
+# Allow crawling of all content
 User-agent: *
 Allow: /
 
+# Disallow admin area
+User-agent: *
+Disallow: /admin/
+
+# Disallow API routes
+User-agent: *
+Disallow: /api/
+
+# Block specific crawlers that might overload the server
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
 # Sitemap location
-Sitemap: https://enitjunior.com/sitemap.xml
+Sitemap: https://enitje.com/sitemap.xml
 

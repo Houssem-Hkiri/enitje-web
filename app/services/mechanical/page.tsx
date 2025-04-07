@@ -18,35 +18,29 @@ import Image from "next/image"
 
 import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
-import { getThemePreference, setThemePreference } from '@/app/utils/theme'
+import { getThemePreference, setThemePreference } from "@/app/utils/theme"
+import { useLanguage } from "@/app/contexts/LanguageContext"
 
 export default function MechanicalDesignPage() {
   const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState<"fr" | "en">("fr")
-  const [activeTab, setActiveTab] = useState<string>("cad")
+  const [activeTab, setActiveTab] = useState<string>("design")
+  const { language, setLanguage } = useLanguage()
 
-  // Initialize theme on mount
+  // Initialize theme and state on mount
   useEffect(() => {
     const theme = getThemePreference()
-    setDarkMode(theme === 'dark')
+    setDarkMode(theme === "dark")
     setThemePreference(theme)
+
+    // Apply dark mode class immediately
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
   }, [])
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const newTheme = !prev ? 'dark' : 'light'
-      setThemePreference(newTheme)
-      return !prev
-    })
-  }
-
-  // Set language
-  const toggleLanguage = (lang: "fr" | "en") => {
-    setLanguage(lang)
-  }
-
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element when darkMode changes
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark")
@@ -54,6 +48,24 @@ export default function MechanicalDesignPage() {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const newTheme = !prev ? "dark" : "light"
+      setThemePreference(newTheme)
+      return !prev
+    })
+  }
+
+  // Toggle language
+  const toggleLanguage = (lang?: "fr" | "en") => {
+    if (lang) {
+      setLanguage(lang);
+    } else {
+      setLanguage(language === "fr" ? "en" : "fr");
+    }
+  }
 
   // FAQ data
   const faqs =
@@ -173,9 +185,8 @@ export default function MechanicalDesignPage() {
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
               <h2 className="text-3xl font-bold mb-6">
                 {language === "fr" ? "Aperçu du Service" : "Service Overview"}
@@ -217,8 +228,7 @@ export default function MechanicalDesignPage() {
                     key={index}
                     className="bg-white dark:bg-navy-light/20 p-6 rounded-xl shadow-md border border-gray-100 dark:border-navy-light/10"
                     initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
                     <div className="bg-secondary/10 dark:bg-secondary/20 p-3 rounded-lg w-12 h-12 flex items-center justify-center text-secondary mb-4">
@@ -685,7 +695,7 @@ export default function MechanicalDesignPage() {
         </div>
       </section>
 
-      <Footer language={language} toggleLanguage={toggleLanguage} />
+      <Footer />
     </div>
   )
 }

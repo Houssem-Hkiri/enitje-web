@@ -1,46 +1,143 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
 import Image from "next/image"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Calendar, ChevronRight, Search } from "lucide-react"
-
+import { ChevronRight, Calendar, User, Newspaper as NewspaperIcon } from "lucide-react"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 import PageHeader from "../components/PageHeader"
-import { newsData } from "../data/news"
-import { getThemePreference, setThemePreference } from '../utils/theme'
+import { useLanguage } from "../contexts/LanguageContext"
+import { getThemePreference, setThemePreference } from "../utils/theme"
+import type { NewsArticle } from "@/app/lib/supabase"
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 12,
+    },
+  },
+}
+
+// NewsCard component for displaying individual news articles
+const NewsCard = ({ article, language }: { article: NewsArticle, language: string }) => {
+  // Format date helper function
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    };
+    return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', options);
+  };
+
+  // Helper function to strip HTML tags from content
+  const stripHtmlTags = (html: string): string => {
+    return html?.replace(/<[^>]*>/g, '') || '';
+  };
+
+  // Helper function to create excerpt from content
+  const createExcerpt = (content: string, length: number = 150): string => {
+    const plainText = stripHtmlTags(content);
+    return plainText.length > length ? 
+      plainText.substring(0, length) + '...' : 
+      plainText;
+  };
+
+  return (
+    <Link 
+      href={`/news/${article.slug}`}
+      className="bg-white dark:bg-[#28384d]/50 rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 border border-gray-100 dark:border-white/5 hover:border-gray-200 dark:hover:border-white/20 group hover:transform hover:-translate-y-1 flex flex-col h-full"
+    >
+      {article.image_url && (
+        <div className="relative h-48 overflow-hidden">
+          <Image
+            src={article.image_url}
+            alt={article.title || ''}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+          {article.category && (
+            <div className="absolute top-3 left-3">
+              <span className="inline-block px-3 py-1 bg-[#00adb5] text-white text-xs font-medium rounded-full">
+                {article.category}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <div className="p-5 flex-1 flex flex-col">
+        <div className="text-sm text-gray-500 dark:text-white/60 mb-2">
+          {formatDate(article.publication_date || article.created_at)}
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2 group-hover:text-[#00adb5] transition-colors">
+          {article.title}
+        </h3>
+        <div className="text-gray-600 dark:text-white/70 line-clamp-3 mb-4 flex-1">
+          {article.excerpt || createExcerpt(article.content || '')}
+        </div>
+        <div className="flex items-center text-[#00adb5] text-sm font-medium group-hover:translate-x-1 transition-transform duration-300">
+          {language === 'fr' ? 'Lire la suite' : 'Read more'}
+          <ChevronRight className="h-4 w-4 ml-1" />
+        </div>
+      </div>
+    </Link>
+  );
+};
+
+// Main component
 export default function NewsPage() {
+  // Initialize state variables
+  const [news, setNews] = useState<NewsArticle[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState<"fr" | "en">("fr")
-  const [activeCategory, setActiveCategory] = useState<string>("all")
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filteredNews, setFilteredNews] = useState<any[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const { language, setLanguage } = useLanguage()
+  
+  const supabase = createClientComponentClient()
 
-  // Initialize theme on mount
+  // Extract unique categories from news articles
+  const categories = [...new Set(news.map(article => article.category).filter(Boolean))] as string[];
+
+  // Filter news based on selected category
+  const filteredNews = selectedCategory 
+    ? news.filter(article => article.category === selectedCategory)
+    : news;
+
   useEffect(() => {
+    fetchNews()
+    
+    // Initialize dark mode
     const theme = getThemePreference()
     setDarkMode(theme === 'dark')
     setThemePreference(theme)
+    
+    return () => {
+      // Don't remove on unmount - let other components manage this
+    }
   }, [])
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const newTheme = !prev ? 'dark' : 'light'
-      setThemePreference(newTheme)
-      return !prev
-    })
-  }
-
-  // Set language
-  const toggleLanguage = (lang: "fr" | "en") => {
-    setLanguage(lang)
-    // Reset category when language changes to avoid mismatches
-    setActiveCategory("all")
-  }
 
   // Apply dark mode class to html element
   useEffect(() => {
@@ -51,259 +148,179 @@ export default function NewsPage() {
     }
   }, [darkMode])
 
-  // Get current news based on language
-  const currentNews = newsData[language]
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const newTheme = !prev ? 'dark' : 'light'
+      setThemePreference(newTheme)
+      return !prev
+    })
+  }
 
-  // Get unique categories
-  const categories = (() => {
-    const allCategories = currentNews.map((item) => item.category)
-    const uniqueCategories = Array.from(new Set(allCategories))
-    return [language === "fr" ? "Tous" : "All", ...uniqueCategories]
-  })()
-
-  // Filter news when language, category, or search query changes
-  useEffect(() => {
-    let filtered = [...currentNews]
-
-    // Filter by category
-    if (
-      !(
-        activeCategory === "all" ||
-        (language === "fr" && activeCategory === "Tous") ||
-        (language === "en" && activeCategory === "All")
-      )
-    ) {
-      filtered = filtered.filter((item) => item.category === activeCategory)
+  const fetchNews = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("news")
+        .select("*")
+        .order("created_at", { ascending: false })
+      
+      if (error) throw error
+      setNews(data)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
     }
-
-    // Filter by search query
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      filtered = filtered.filter(
-        (item) => item.title.toLowerCase().includes(query) || item.excerpt.toLowerCase().includes(query),
-      )
-    }
-
-    setFilteredNews(filtered)
-  }, [activeCategory, searchQuery, language, currentNews])
-
-  // Handle category selection
-  const handleCategoryChange = (category: string) => {
-    setActiveCategory(category)
   }
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
+  const toggleLanguage = (lang?: "fr" | "en") => {
+    setLanguage(lang || (language === "fr" ? "en" : "fr"))
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        type: "spring",
-        stiffness: 100,
-        damping: 12,
-      },
-    },
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#28384d] transition-colors duration-300">
+        <div className="w-12 h-12 border-4 border-gray-200 dark:border-[#00adb5]/30 border-t-gray-600 dark:border-t-[#00adb5] rounded-full animate-spin"></div>
+      </div>
+    )
   }
 
-  return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden transition-colors duration-300">
-      <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} language={language} toggleLanguage={toggleLanguage} />
-
-      <PageHeader
-        title={language === "fr" ? "Actualités & Événements" : "News & Events"}
-        subtitle={
-          language === "fr"
-            ? "Restez informé des dernières actualités, événements et annonces d'ENIT Junior Entreprise"
-            : "Stay updated with the latest news, events, and announcements from ENIT Junior Entreprise"
-        }
-      />
-
-      {/* News Filters */}
-      <section className="py-12 bg-white dark:bg-navy/90">
-        <div className="container mx-auto px-6">
-          <motion.div
-            className="flex flex-col md:flex-row justify-between items-center gap-6 mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            {/* Category Filters */}
-            <motion.div
-              className="flex flex-wrap gap-3"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white dark:bg-[#28384d] pt-32 pb-20 transition-colors duration-300">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-white p-4 rounded-lg max-w-xl mx-auto">
+            <p>{error}</p>
+            <button 
+              onClick={fetchNews}
+              className="mt-4 px-4 py-2 bg-[#00adb5] text-white rounded-md hover:bg-[#00adb5]/90 transition-colors"
             >
-              {categories.map((category, index) => (
-                <motion.button
-                  key={index}
-                  variants={itemVariants}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    (category === "Tous" && activeCategory === "Tous") ||
-                    (category === "All" && activeCategory === "All") ||
-                    (activeCategory === category)
-                      ? "bg-secondary text-white"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-navy/50 dark:text-gray-300 dark:hover:bg-navy/70"
-                  }`}
-                  onClick={() => handleCategoryChange(category)}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  {category}
-                </motion.button>
-              ))}
-            </motion.div>
-
-            {/* Search */}
-            <motion.div
-              className="relative w-full md:w-auto"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <input
-                type="text"
-                placeholder={language === "fr" ? "Rechercher..." : "Search news..."}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 rounded-full w-full md:w-64 bg-gray-100 dark:bg-navy/50 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent text-gray-900 dark:text-white"
-              />
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500 dark:text-gray-400" />
-            </motion.div>
-          </motion.div>
-
-          {/* News Grid */}
-          {filteredNews.length > 0 ? (
-            <motion.div
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {filteredNews.map((news, index) => (
-                <motion.div
-                  key={news.id}
-                  variants={itemVariants}
-                  className="bg-white dark:bg-navy/50 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300"
-                  whileHover={{ y: -10 }}
-                >
-                  <div className="relative overflow-hidden h-48">
-                    <Image
-                      src={news.image || "/placeholder.svg"}
-                      alt={news.title}
-                      fill
-                      className="object-cover transition-transform duration-500 hover:scale-110"
-                    />
-                    <div className="absolute top-0 right-0 bg-secondary text-white text-xs font-bold px-3 py-1 m-2 rounded-full">
-                      {news.category}
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm mb-3">
-                      <Calendar className="h-4 w-4 mr-1" />
-                      <span>{news.date}</span>
-                    </div>
-                    <h3 className="text-xl font-bold mb-3 text-navy dark:text-white">{news.title}</h3>
-                    <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">{news.excerpt}</p>
-                    <Link
-                      href={`/news/${news.id}`}
-                      className="text-secondary hover:text-secondary-dark transition-colors duration-300 flex items-center group"
-                    >
-                      {language === "fr" ? "Lire la suite" : "Read more"}
-                      <motion.div
-                        initial={{ x: 0 }}
-                        whileHover={{ x: 5 }}
-                        transition={{ type: "spring", stiffness: 400, damping: 10 }}
-                      >
-                        <ChevronRight className="ml-2 h-4 w-4" />
-                      </motion.div>
-                    </Link>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <motion.div
-              className="text-center py-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.6 }}
-            >
-              <h3 className="text-xl font-medium mb-2 text-navy dark:text-white">
-                {language === "fr" ? "Aucun résultat trouvé" : "No results found"}
-              </h3>
-              <p className="text-gray-600 dark:text-gray-300">
-                {language === "fr"
-                  ? "Essayez d'ajuster vos critères de recherche ou de filtre"
-                  : "Try adjusting your search or filter criteria"}
-              </p>
-            </motion.div>
-          )}
-        </div>
-      </section>
-
-      {/* Newsletter Section */}
-      <section className="py-16 bg-gray-50 dark:bg-navy/80">
-        <div className="container mx-auto px-6">
-          <div className="max-w-3xl mx-auto text-center">
-            <motion.h2
-              className="text-3xl md:text-4xl font-bold mb-6 gradient-text"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              {language === "fr" ? "Restez Informé avec Notre Newsletter" : "Stay Updated with Our Newsletter"}
-            </motion.h2>
-            <motion.p
-              className="text-gray-600 mb-8"
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              {language === "fr"
-                ? "Abonnez-vous à notre newsletter pour recevoir les dernières actualités, événements et opportunités directement dans votre boîte de réception."
-                : "Subscribe to our newsletter to receive the latest news, events, and opportunities directly in your inbox."}
-            </motion.p>
-            <motion.form
-              className="flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-            >
-              <input
-                type="email"
-                placeholder={language === "fr" ? "Votre adresse email" : "Your email address"}
-                className="px-4 py-3 rounded-full bg-white border border-gray-200 focus:outline-none focus:ring-2 focus:ring-secondary focus:border-transparent flex-grow"
-              />
-              <motion.button
-                type="submit"
-                className="px-6 py-3 bg-secondary text-white rounded-full hover:bg-secondary-light transition-all duration-300 flex items-center justify-center"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {language === "fr" ? "S'abonner" : "Subscribe"}
-                <ChevronRight className="ml-2 h-4 w-4" />
-              </motion.button>
-            </motion.form>
+              {language === "fr" ? "Réessayer" : "Try Again"}
+            </button>
           </div>
         </div>
-      </section>
+      </div>
+    )
+  }
 
-      <Footer language={language} toggleLanguage={toggleLanguage} />
+  // For the empty news state
+  const EmptyState = () => (
+    <div className="text-center py-12">
+      <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-white/5 mb-6">
+        <NewspaperIcon className="h-8 w-8 text-[#00adb5]" />
+      </div>
+      <h3 className="text-xl font-medium text-gray-800 dark:text-white mb-2">
+        {language === "fr" ? "Aucun article trouvé" : "No articles found"}
+      </h3>
+      <p className="text-gray-600 dark:text-white/70 max-w-md mx-auto">
+        {language === "fr"
+          ? "Aucun article n'a été trouvé pour cette catégorie. Veuillez essayer une autre catégorie."
+          : "No articles were found for this category. Please try another category."}
+      </p>
+      {selectedCategory && (
+        <button
+          onClick={() => setSelectedCategory(null)}
+          className="mt-6 px-4 py-2 bg-[#00adb5] text-white rounded-md hover:bg-[#00adb5]/90 transition-colors"
+        >
+          {language === "fr" ? "Voir tous les articles" : "View all articles"}
+        </button>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-[#28384d] transition-colors duration-300">
+      <Header 
+        darkMode={darkMode}
+        toggleDarkMode={toggleDarkMode}
+        language={language}
+        toggleLanguage={toggleLanguage}
+      />
+      
+      {/* Hero Section */}
+      <div className="relative">
+        <div className="bg-gradient-to-b from-white via-white/95 to-white/90 dark:from-[#28384d] dark:via-[#28384d]/95 dark:to-[#28384d]/90 pt-40 pb-16 transition-colors duration-300">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="max-w-4xl mx-auto text-center">
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-6">
+                {language === "fr" ? "Actualités" : "Latest News"}
+              </h1>
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                {language === "fr" 
+                  ? "Restez informé des dernières actualités, événements et réalisations de ENIT Junior Enterprise."
+                  : "Stay informed about the latest news, events, and achievements from ENIT Junior Enterprise."
+                }
+              </p>
+              
+              {/* Category Pills */}
+              <div className="flex flex-wrap justify-center gap-2 mt-6">
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 
+                    ${!selectedCategory 
+                      ? 'bg-[#00adb5] text-white' 
+                      : 'bg-gray-100 dark:bg-[#28384d]/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#28384d]/80'
+                    }`}
+                >
+                  {language === "fr" ? "Tous" : "All"}
+                </button>
+                
+                {categories.map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 
+                      ${selectedCategory === category 
+                        ? 'bg-[#00adb5] text-white' 
+                        : 'bg-gray-100 dark:bg-[#28384d]/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#28384d]/80'
+                      }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 sm:px-6 py-12">
+        {/* News Articles Grid */}
+        {loading ? (
+          <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#28384d] transition-colors duration-300">
+            <div className="w-12 h-12 border-4 border-gray-200 dark:border-[#00adb5]/30 border-t-gray-600 dark:border-t-[#00adb5] rounded-full animate-spin"></div>
+          </div>
+        ) : error ? (
+          <div className="min-h-screen bg-white dark:bg-[#28384d] pt-32 pb-20 transition-colors duration-300">
+            <div className="container mx-auto px-4 sm:px-6">
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-white p-4 rounded-lg max-w-xl mx-auto">
+                <p>{error}</p>
+                <button 
+                  onClick={fetchNews}
+                  className="mt-4 px-4 py-2 bg-[#00adb5] text-white rounded-md hover:bg-[#00adb5]/90 transition-colors"
+                >
+                  {language === "fr" ? "Réessayer" : "Try Again"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          filteredNews.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredNews.map((article) => (
+                <NewsCard 
+                  key={article.id} 
+                  article={article} 
+                  language={language}
+                />
+              ))}
+            </div>
+          ) : (
+            <EmptyState />
+          )
+        )}
+      </div>
+      
+      <Footer />
     </div>
   )
 }

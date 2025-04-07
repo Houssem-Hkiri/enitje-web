@@ -22,44 +22,34 @@ import Link from "next/link"
 import Header from "../components/Header"
 import Footer from "../components/Footer"
 
-// Import translations
+// Import translations and context
 import { translations } from "../translations"
-import { getThemePreference, setThemePreference } from '../utils/theme'
+import { getThemePreference, setThemePreference } from "../utils/theme"
+import { useLanguage } from "../contexts/LanguageContext"
 
 export default function ServicesPage() {
   const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState<"fr" | "en">("fr")
+  const { language, setLanguage } = useLanguage()
   const [activeTab, setActiveTab] = useState<number>(0)
 
   // Get translations based on current language
   const t = translations[language]
 
-  // Initialize theme on mount
+  // Initialize theme and state on mount
   useEffect(() => {
     const theme = getThemePreference()
-    setDarkMode(theme === 'dark')
+    setDarkMode(theme === "dark")
     setThemePreference(theme)
+
+    // Apply dark mode class immediately
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
   }, [])
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const newTheme = !prev ? 'dark' : 'light'
-      setThemePreference(newTheme)
-      return !prev
-    })
-  }
-
-  // Set language
-  const toggleLanguage = (lang?: "fr" | "en") => {
-    if (lang) {
-      setLanguage(lang)
-    } else {
-      setLanguage(language === "fr" ? "en" : "fr")
-    }
-  }
-
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element when darkMode changes
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark")
@@ -67,6 +57,25 @@ export default function ServicesPage() {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const newTheme = !prev ? "dark" : "light"
+      setThemePreference(newTheme)
+      return !prev
+    })
+  }
+
+  // Toggle language - using the context
+  const toggleLanguage = (lang?: "fr" | "en") => {
+    if (lang) {
+      setLanguage(lang);
+    } else {
+      setLanguage(language === "fr" ? "en" : "fr");
+    }
+    setActiveTab(0);
+  }
 
   // Services data
   const services = [
@@ -87,9 +96,9 @@ export default function ServicesPage() {
               "Maintenance et support",
             ]
           : ["Web & mobile development", "Custom applications", "System integration", "Maintenance & support"],
-      color: "from-blue-500 to-cyan-400",
-      bgColor: "bg-blue-50 dark:bg-blue-900/20",
-      iconColor: "text-blue-500",
+      color: "from-[#00adb5] to-[#00adb5]/70",
+      bgColor: "bg-[#00adb5]/10 dark:bg-[#00adb5]/20",
+      iconColor: "text-[#00adb5]",
     },
     {
       id: "consulting",
@@ -103,9 +112,9 @@ export default function ServicesPage() {
         language === "fr"
           ? ["Analyse de marché", "Optimisation des processus", "Stratégie d'entreprise", "Gestion de projet"]
           : ["Market analysis", "Process optimization", "Business strategy", "Project management"],
-      color: "from-purple-500 to-indigo-500",
-      bgColor: "bg-purple-50 dark:bg-purple-900/20",
-      iconColor: "text-purple-500",
+      color: "from-[#28384d] to-[#28384d]/70",
+      bgColor: "bg-[#28384d]/10 dark:bg-[#28384d]/20",
+      iconColor: "text-[#28384d] dark:text-[#28384d]/90",
     },
     {
       id: "mechanical",
@@ -119,9 +128,9 @@ export default function ServicesPage() {
         language === "fr"
           ? ["Conception CAO", "Prototypage", "Analyse structurelle", "Documentation technique"]
           : ["CAD design", "Prototyping", "Structural analysis", "Technical documentation"],
-      color: "from-orange-500 to-amber-500",
-      bgColor: "bg-orange-50 dark:bg-orange-900/20",
-      iconColor: "text-orange-500",
+      color: "from-[#28384d]/50 to-[#00adb5]/50",
+      bgColor: "bg-[#28384d]/10 dark:bg-[#28384d]/20",
+      iconColor: "text-[#28384d] dark:text-[#28384d]/90",
     },
     {
       id: "electrical",
@@ -135,9 +144,9 @@ export default function ServicesPage() {
         language === "fr"
           ? ["Conception de circuits", "Automatisation", "Systèmes de contrôle", "Audits énergétiques"]
           : ["Circuit design", "Automation", "Control systems", "Energy audits"],
-      color: "from-green-500 to-emerald-500",
-      bgColor: "bg-green-50 dark:bg-green-900/20",
-      iconColor: "text-green-500",
+      color: "from-[#00adb5]/70 to-[#28384d]/70",
+      bgColor: "bg-[#00adb5]/10 dark:bg-[#00adb5]/20",
+      iconColor: "text-[#00adb5]",
     },
   ]
 
@@ -156,17 +165,17 @@ export default function ServicesPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "NOS SERVICES" : "OUR SERVICES"}
               </span>
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 leading-tight">
                 {language === "fr" ? (
                   <>
-                    Solutions <span className="text-secondary">Innovantes</span> pour Votre Entreprise
+                    Solutions <span className="text-[#00adb5]">Innovantes</span> pour Votre Entreprise
                   </>
                 ) : (
                   <>
-                    <span className="text-secondary">Innovative</span> Solutions for Your Business
+                    <span className="text-[#00adb5]">Innovative</span> Solutions for Your Business
                   </>
                 )}
               </h1>
@@ -178,7 +187,7 @@ export default function ServicesPage() {
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="#services"
-                  className="px-6 py-3 bg-secondary text-white rounded-full hover:bg-secondary-light transition-all duration-300 font-medium flex items-center gap-2 shadow-md hover:shadow-lg"
+                  className="px-6 py-3 bg-[#00adb5] text-white rounded-full hover:bg-[#00adb5]/90 transition-all duration-300 font-medium flex items-center gap-2 shadow-md hover:shadow-lg"
                 >
                   {language === "fr" ? "Explorer Nos Services" : "Explore Our Services"}
                   <ArrowRight className="w-4 h-4" />
@@ -199,13 +208,8 @@ export default function ServicesPage() {
       <section id="services" className="py-20 relative">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-            >
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "CE QUE NOUS OFFRONS" : "WHAT WE OFFER"}
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">
@@ -229,7 +233,7 @@ export default function ServicesPage() {
                     onClick={() => setActiveTab(index)}
                     className={`px-5 py-2.5 rounded-full whitespace-nowrap text-sm font-medium transition-all duration-300 flex-shrink-0 snap-start ${
                       activeTab === index
-                        ? "bg-secondary text-white shadow-md"
+                        ? "bg-[#00adb5] text-white shadow-md"
                         : "bg-gray-100 dark:bg-navy-light/20 text-gray-700 dark:text-gray-300"
                     }`}
                   >
@@ -240,16 +244,14 @@ export default function ServicesPage() {
                   </button>
                 ))}
               </div>
-              
+
               {/* Scroll indicators */}
               <div className="mt-3 flex justify-center gap-1.5">
                 {services.map((_, index) => (
-                  <div 
+                  <div
                     key={index}
                     className={`h-1.5 rounded-full transition-all duration-300 ${
-                      activeTab === index 
-                        ? "w-5 bg-secondary" 
-                        : "w-1.5 bg-gray-300 dark:bg-gray-600"
+                      activeTab === index ? "w-5 bg-[#00adb5]" : "w-1.5 bg-gray-300 dark:bg-gray-600"
                     }`}
                     onClick={() => setActiveTab(index)}
                   ></div>
@@ -265,15 +267,14 @@ export default function ServicesPage() {
                 key={index}
                 className="bg-white dark:bg-navy-light/20 rounded-2xl shadow-lg overflow-hidden group hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-navy-light/10 h-full flex flex-col"
                 initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
+                animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 whileHover={{ y: -5 }}
               >
                 <div className={`h-2 w-full bg-gradient-to-r ${service.color}`}></div>
                 <div className="p-5 md:p-6 flex-grow">
                   <div
-                    className={`w-14 h-14 ${service.bgColor} rounded-2xl flex items-center justify-center mb-5 ${service.iconColor} group-hover:bg-secondary group-hover:text-white transition-all duration-300`}
+                    className={`w-14 h-14 ${service.bgColor} rounded-2xl flex items-center justify-center mb-5 ${service.iconColor} group-hover:bg-[#00adb5] group-hover:text-white transition-all duration-300`}
                   >
                     <service.icon className="h-7 w-7" />
                   </div>
@@ -282,7 +283,7 @@ export default function ServicesPage() {
                   <ul className="space-y-3">
                     {service.features.map((feature, idx) => (
                       <li key={idx} className="flex items-start">
-                        <CheckCircle className="h-5 w-5 text-secondary mr-2 flex-shrink-0 mt-0.5" />
+                        <CheckCircle className="h-5 w-5 text-[#00adb5] mr-2 flex-shrink-0 mt-0.5" />
                         <span className="text-gray-700 dark:text-gray-300">{feature}</span>
                       </li>
                     ))}
@@ -291,7 +292,7 @@ export default function ServicesPage() {
                 <div className="p-5 md:p-6 pt-0 mt-auto">
                   <Link
                     href={`/services/${service.id}`}
-                    className="inline-flex items-center text-secondary font-medium hover:underline group/link"
+                    className="inline-flex items-center text-[#00adb5] font-medium hover:underline group/link"
                   >
                     {language === "fr" ? "En savoir plus" : "Learn more"}
                     <ChevronRight className="ml-1 h-4 w-4 transition-transform duration-300 group-hover/link:translate-x-1" />
@@ -324,11 +325,11 @@ export default function ServicesPage() {
                     <p className="text-gray-600 dark:text-gray-300">{services[activeTab].description}</p>
                   </div>
                 </div>
-                
+
                 <ul className="space-y-3 mb-6">
                   {services[activeTab].features.map((feature, idx) => (
                     <li key={idx} className="flex items-start bg-gray-50 dark:bg-navy/20 p-3 rounded-lg">
-                      <CheckCircle className="h-5 w-5 text-secondary mr-2 flex-shrink-0 mt-0.5" />
+                      <CheckCircle className="h-5 w-5 text-[#00adb5] mr-2 flex-shrink-0 mt-0.5" />
                       <span className="text-gray-700 dark:text-gray-300">{feature}</span>
                     </li>
                   ))}
@@ -337,7 +338,7 @@ export default function ServicesPage() {
               <div className="p-6 pt-0 border-t border-gray-100 dark:border-navy-light/10">
                 <Link
                   href={`/services/${services[activeTab].id}`}
-                  className="inline-flex items-center justify-center w-full bg-secondary text-white py-3 px-4 rounded-xl font-medium hover:bg-secondary-light transition-all duration-300"
+                  className="inline-flex items-center justify-center w-full bg-[#00adb5] text-white py-3 px-4 rounded-xl font-medium hover:bg-[#00adb5]/90 transition-all duration-300"
                 >
                   {language === "fr" ? "En savoir plus" : "Learn more"}
                   <ChevronRight className="ml-1 h-4 w-4" />
@@ -354,11 +355,10 @@ export default function ServicesPage() {
           <div className="text-center mb-16">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "NOTRE PROCESSUS" : "OUR PROCESS"}
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">
@@ -419,21 +419,20 @@ export default function ServicesPage() {
                   key={index}
                   className="relative"
                   initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
                   {/* Mobile connector line */}
                   {index > 0 && (
                     <div className="absolute top-0 left-1/2 h-8 w-0.5 -translate-x-1/2 -translate-y-8 bg-gray-200 dark:bg-navy-light/20 sm:hidden"></div>
                   )}
-                  
+
                   <div className="bg-white dark:bg-navy-light/20 rounded-2xl shadow-lg p-6 sm:p-8 border border-gray-100 dark:border-navy-light/10 h-full relative z-10">
-                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-secondary text-white rounded-2xl flex items-center justify-center mb-6 mx-auto lg:absolute lg:-top-8 lg:left-1/2 lg:-translate-x-1/2 shadow-lg">
+                    <div className="w-14 h-14 sm:w-16 sm:h-16 bg-[#00adb5] text-white rounded-2xl flex items-center justify-center mb-6 mx-auto lg:absolute lg:-top-8 lg:left-1/2 lg:-translate-x-1/2 shadow-lg">
                       <step.icon className="h-7 w-7 sm:h-8 sm:w-8" />
                     </div>
                     <div className="pt-0 lg:pt-8 text-center">
-                      <div className="text-secondary font-bold text-xl mb-2">{step.step}</div>
+                      <div className="text-[#00adb5] font-bold text-xl mb-2">{step.step}</div>
                       <h3 className="text-xl font-bold mb-4">{step.title}</h3>
                       <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
                     </div>
@@ -454,11 +453,10 @@ export default function ServicesPage() {
           <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "POURQUOI NOUS CHOISIR" : "WHY CHOOSE US"}
               </span>
               <h2 className="text-3xl sm:text-4xl font-bold mb-6">
@@ -509,11 +507,10 @@ export default function ServicesPage() {
                     key={index}
                     className="flex flex-col sm:flex-row items-start bg-white dark:bg-navy-light/20 p-4 rounded-xl shadow-md border border-gray-100 dark:border-navy-light/10"
                     initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.4, delay: index * 0.1 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: 0.3 + index * 0.1 }}
                   >
-                    <div className="bg-secondary/10 p-3 rounded-lg mb-3 sm:mb-0 sm:mr-4 text-secondary flex-shrink-0 mx-auto sm:mx-0">
+                    <div className="bg-[#00adb5]/10 p-3 rounded-lg mb-3 sm:mb-0 sm:mr-4 text-[#00adb5] flex-shrink-0 mx-auto sm:mx-0">
                       <value.icon className="h-6 w-6" />
                     </div>
                     <div className="text-center sm:text-left">
@@ -528,9 +525,8 @@ export default function ServicesPage() {
             <motion.div
               className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6"
               initial={{ opacity: 0, x: 30 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
             >
               <div className="space-y-4 sm:space-y-6">
                 <motion.div
@@ -570,7 +566,7 @@ export default function ServicesPage() {
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 bg-secondary text-white relative overflow-hidden">
+      <section className="py-16 bg-[#00adb5] text-white relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-white/10 to-transparent"></div>
         <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
@@ -579,8 +575,7 @@ export default function ServicesPage() {
           <motion.div
             className="text-center max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
           >
             <h2 className="text-3xl sm:text-4xl font-bold mb-6">
@@ -594,13 +589,13 @@ export default function ServicesPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/contact"
-                className="px-8 py-3 bg-white text-secondary rounded-full hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
+                className="px-8 py-3 bg-white text-[#00adb5] rounded-full hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
               >
                 {language === "fr" ? "Contactez-Nous" : "Get in Touch"}
               </Link>
               <Link
                 href="/contact?type=quote"
-                className="px-8 py-3 border-2 border-white text-white rounded-full hover:bg-white hover:text-secondary transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
+                className="px-8 py-3 border-2 border-white text-white rounded-full hover:bg-white hover:text-[#00adb5] transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
               >
                 {language === "fr" ? "Demander un Devis" : "Request a Quote"}
               </Link>

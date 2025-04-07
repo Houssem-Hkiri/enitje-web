@@ -20,35 +20,29 @@ import Image from "next/image"
 
 import Header from "@/app/components/Header"
 import Footer from "@/app/components/Footer"
-import { getThemePreference, setThemePreference } from '@/app/utils/theme'
+import { getThemePreference, setThemePreference } from "@/app/utils/theme"
+import { useLanguage } from "@/app/contexts/LanguageContext"
 
 export default function ITDevelopmentPage() {
   const [darkMode, setDarkMode] = useState(true)
-  const [language, setLanguage] = useState<"fr" | "en">("fr")
   const [activeTab, setActiveTab] = useState<string>("web")
+  const { language, setLanguage } = useLanguage()
 
-  // Initialize theme on mount
+  // Initialize theme and state on mount
   useEffect(() => {
     const theme = getThemePreference()
-    setDarkMode(theme === 'dark')
+    setDarkMode(theme === "dark")
     setThemePreference(theme)
+
+    // Apply dark mode class immediately
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark")
+    } else {
+      document.documentElement.classList.remove("dark")
+    }
   }, [])
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode((prev) => {
-      const newTheme = !prev ? 'dark' : 'light'
-      setThemePreference(newTheme)
-      return !prev
-    })
-  }
-
-  // Set language
-  const toggleLanguage = (lang: "fr" | "en") => {
-    setLanguage(lang)
-  }
-
-  // Apply dark mode class to html element
+  // Apply dark mode class to html element when darkMode changes
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add("dark")
@@ -56,6 +50,24 @@ export default function ITDevelopmentPage() {
       document.documentElement.classList.remove("dark")
     }
   }, [darkMode])
+
+  // Toggle dark mode
+  const toggleDarkMode = () => {
+    setDarkMode((prev) => {
+      const newTheme = !prev ? "dark" : "light"
+      setThemePreference(newTheme)
+      return !prev
+    })
+  }
+
+  // Toggle language
+  const toggleLanguage = (lang?: "fr" | "en") => {
+    if (lang) {
+      setLanguage(lang);
+    } else {
+      setLanguage(language === "fr" ? "en" : "fr");
+    }
+  }
 
   // FAQ data
   const faqs =
@@ -125,21 +137,21 @@ export default function ITDevelopmentPage() {
               transition={{ duration: 0.5 }}
               className="flex flex-col md:flex-row items-center md:items-start gap-8"
             >
-              <div className="bg-secondary/10 dark:bg-secondary/20 p-6 rounded-2xl flex items-center justify-center text-secondary flex-shrink-0">
+              <div className="bg-[#00adb5]/10 dark:bg-[#00adb5]/20 p-6 rounded-2xl flex items-center justify-center text-[#00adb5] flex-shrink-0">
                 <Code className="h-16 w-16" />
               </div>
               <div>
-                <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+                <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                   {language === "fr" ? "DÉVELOPPEMENT INFORMATIQUE" : "IT DEVELOPMENT"}
                 </span>
                 <h1 className="text-4xl sm:text-5xl font-bold mb-6 leading-tight">
                   {language === "fr" ? (
                     <>
-                      Solutions <span className="text-secondary">Numériques</span> Personnalisées
+                      Solutions <span className="text-[#00adb5]">Numériques</span> Personnalisées
                     </>
                   ) : (
                     <>
-                      Custom <span className="text-secondary">Digital</span> Solutions
+                      Custom <span className="text-[#00adb5]">Digital</span> Solutions
                     </>
                   )}
                 </h1>
@@ -151,7 +163,7 @@ export default function ITDevelopmentPage() {
                 <div className="flex flex-wrap gap-4">
                   <Link
                     href="#services"
-                    className="px-6 py-3 bg-secondary text-white rounded-full hover:bg-secondary/80 transition-all duration-300 font-medium flex items-center gap-2 shadow-md hover:shadow-lg"
+                    className="px-6 py-3 bg-[#00adb5] text-white rounded-full hover:bg-[#00adb5]/80 transition-all duration-300 font-medium flex items-center gap-2 shadow-md hover:shadow-lg"
                   >
                     {language === "fr" ? "Nos Services" : "Our Services"}
                     <ArrowRight className="w-4 h-4" />
@@ -175,9 +187,8 @@ export default function ITDevelopmentPage() {
           <div className="max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
             >
               <h2 className="text-3xl font-bold mb-6">
                 {language === "fr" ? "Aperçu du Service" : "Service Overview"}
@@ -219,11 +230,10 @@ export default function ITDevelopmentPage() {
                     key={index}
                     className="bg-white dark:bg-navy-light/20 p-6 rounded-xl shadow-md border border-gray-100 dark:border-navy-light/10"
                     initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
+                    animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                   >
-                    <div className="bg-secondary/10 dark:bg-secondary/20 p-3 rounded-lg w-12 h-12 flex items-center justify-center text-secondary mb-4">
+                    <div className="bg-[#00adb5]/10 dark:bg-[#00adb5]/20 p-3 rounded-lg w-12 h-12 flex items-center justify-center text-[#00adb5] mb-4">
                       <item.icon className="h-6 w-6" />
                     </div>
                     <h3 className="text-xl font-bold mb-2">{item.title}</h3>
@@ -247,7 +257,7 @@ export default function ITDevelopmentPage() {
               transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "NOS SERVICES" : "OUR SERVICES"}
               </span>
               <h2 className="text-3xl font-bold mb-6">
@@ -278,7 +288,7 @@ export default function ITDevelopmentPage() {
                     onClick={() => setActiveTab(tab.id)}
                     className={`px-4 py-2 rounded-full flex items-center gap-2 transition-all duration-300 ${
                       activeTab === tab.id
-                        ? "bg-secondary text-white"
+                        ? "bg-[#00adb5] text-white"
                         : "bg-gray-100 dark:bg-navy-light/20 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-navy-light/30"
                     }`}
                   >
@@ -298,7 +308,7 @@ export default function ITDevelopmentPage() {
                   className="grid md:grid-cols-2 gap-8 items-center"
                 >
                   <div>
-                    <h3 className="text-2xl font-bold mb-4 text-secondary">
+                    <h3 className="text-2xl font-bold mb-4 text-[#00adb5]">
                       {language === "fr" ? "Développement Web" : "Web Development"}
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300 mb-6">
@@ -324,13 +334,13 @@ export default function ITDevelopmentPage() {
                           ]
                       ).map((item, index) => (
                         <li key={index} className="flex items-start">
-                          <CheckCircle className="h-5 w-5 text-secondary mr-2 flex-shrink-0 mt-0.5" />
+                          <CheckCircle className="h-5 w-5 text-[#00adb5] mr-2 flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="bg-secondary/10 dark:bg-secondary/20 p-8 rounded-2xl">
+                  <div className="bg-[#00adb5]/10 dark:bg-[#00adb5]/20 p-8 rounded-2xl">
                     <Image
                       src="/placeholder.svg?height=300&width=400"
                       alt="Web Development"
@@ -352,7 +362,7 @@ export default function ITDevelopmentPage() {
                   className="grid md:grid-cols-2 gap-8 items-center"
                 >
                   <div>
-                    <h3 className="text-2xl font-bold mb-4 text-secondary">
+                    <h3 className="text-2xl font-bold mb-4 text-[#00adb5]">
                       {language === "fr" ? "Applications Mobiles" : "Mobile Applications"}
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300 mb-6">
@@ -378,13 +388,13 @@ export default function ITDevelopmentPage() {
                           ]
                       ).map((item, index) => (
                         <li key={index} className="flex items-start">
-                          <CheckCircle className="h-5 w-5 text-secondary mr-2 flex-shrink-0 mt-0.5" />
+                          <CheckCircle className="h-5 w-5 text-[#00adb5] mr-2 flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="bg-secondary/10 dark:bg-secondary/20 p-8 rounded-2xl">
+                  <div className="bg-[#00adb5]/10 dark:bg-[#00adb5]/20 p-8 rounded-2xl">
                     <Image
                       src="/placeholder.svg?height=300&width=400"
                       alt="Mobile Applications"
@@ -406,7 +416,7 @@ export default function ITDevelopmentPage() {
                   className="grid md:grid-cols-2 gap-8 items-center"
                 >
                   <div>
-                    <h3 className="text-2xl font-bold mb-4 text-secondary">
+                    <h3 className="text-2xl font-bold mb-4 text-[#00adb5]">
                       {language === "fr" ? "Solutions Sur Mesure" : "Custom Solutions"}
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300 mb-6">
@@ -432,13 +442,13 @@ export default function ITDevelopmentPage() {
                           ]
                       ).map((item, index) => (
                         <li key={index} className="flex items-start">
-                          <CheckCircle className="h-5 w-5 text-secondary mr-2 flex-shrink-0 mt-0.5" />
+                          <CheckCircle className="h-5 w-5 text-[#00adb5] mr-2 flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="bg-secondary/10 dark:bg-secondary/20 p-8 rounded-2xl">
+                  <div className="bg-[#00adb5]/10 dark:bg-[#00adb5]/20 p-8 rounded-2xl">
                     <Image
                       src="/placeholder.svg?height=300&width=400"
                       alt="Custom Solutions"
@@ -460,7 +470,7 @@ export default function ITDevelopmentPage() {
                   className="grid md:grid-cols-2 gap-8 items-center"
                 >
                   <div>
-                    <h3 className="text-2xl font-bold mb-4 text-secondary">
+                    <h3 className="text-2xl font-bold mb-4 text-[#00adb5]">
                       {language === "fr" ? "Maintenance et Support" : "Maintenance and Support"}
                     </h3>
                     <p className="text-gray-700 dark:text-gray-300 mb-6">
@@ -486,13 +496,13 @@ export default function ITDevelopmentPage() {
                           ]
                       ).map((item, index) => (
                         <li key={index} className="flex items-start">
-                          <CheckCircle className="h-5 w-5 text-secondary mr-2 flex-shrink-0 mt-0.5" />
+                          <CheckCircle className="h-5 w-5 text-[#00adb5] mr-2 flex-shrink-0 mt-0.5" />
                           <span>{item}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
-                  <div className="bg-secondary/10 dark:bg-secondary/20 p-8 rounded-2xl">
+                  <div className="bg-[#00adb5]/10 dark:bg-[#00adb5]/20 p-8 rounded-2xl">
                     <Image
                       src="/placeholder.svg?height=300&width=400"
                       alt="Maintenance and Support"
@@ -519,7 +529,7 @@ export default function ITDevelopmentPage() {
               transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "NOTRE PROCESSUS" : "OUR PROCESS"}
               </span>
               <h2 className="text-3xl font-bold mb-6">
@@ -580,13 +590,13 @@ export default function ITDevelopmentPage() {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                 >
                   <div className="md:w-16 flex-shrink-0">
-                    <div className="w-16 h-16 bg-secondary text-white rounded-2xl flex items-center justify-center shadow-lg">
+                    <div className="w-16 h-16 bg-[#00adb5] text-white rounded-2xl flex items-center justify-center shadow-lg">
                       <step.icon className="h-8 w-8" />
                     </div>
                   </div>
                   <div className="flex-grow">
                     <div className="flex items-center mb-2">
-                      <div className="text-secondary font-bold text-xl mr-3">{step.step}</div>
+                      <div className="text-[#00adb5] font-bold text-xl mr-3">{step.step}</div>
                       <h3 className="text-xl font-bold">{step.title}</h3>
                     </div>
                     <p className="text-gray-600 dark:text-gray-300">{step.description}</p>
@@ -609,7 +619,7 @@ export default function ITDevelopmentPage() {
               transition={{ duration: 0.5 }}
               className="text-center mb-12"
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-secondary/10 text-secondary text-sm font-semibold tracking-wide mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-[#00adb5]/10 text-[#00adb5] text-sm font-semibold tracking-wide mb-4">
                 {language === "fr" ? "FAQ" : "FAQ"}
               </span>
               <h2 className="text-3xl font-bold mb-6">
@@ -644,7 +654,7 @@ export default function ITDevelopmentPage() {
       </section>
 
       {/* Call to Action */}
-      <section className="py-16 bg-secondary text-white relative overflow-hidden">
+      <section className="py-16 bg-[#00adb5] text-white relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-12 bg-gradient-to-b from-white/10 to-transparent"></div>
         <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
         <div className="absolute -left-20 top-1/2 -translate-y-1/2 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
@@ -668,13 +678,13 @@ export default function ITDevelopmentPage() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
                 href="/contact"
-                className="px-8 py-3 bg-white text-secondary rounded-full hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
+                className="px-8 py-3 bg-white text-[#00adb5] rounded-full hover:bg-gray-100 transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
               >
                 {language === "fr" ? "Contactez-Nous" : "Get in Touch"}
               </Link>
               <Link
                 href="/contact?type=quote"
-                className="px-8 py-3 border-2 border-white text-white rounded-full hover:bg-white hover:text-secondary transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
+                className="px-8 py-3 border-2 border-white text-white rounded-full hover:bg-white hover:text-[#00adb5] transition-all duration-300 transform hover:scale-105 shadow-lg inline-block font-medium"
               >
                 {language === "fr" ? "Demander un Devis" : "Request a Quote"}
               </Link>
@@ -683,7 +693,7 @@ export default function ITDevelopmentPage() {
         </div>
       </section>
 
-      <Footer language={language} toggleLanguage={toggleLanguage} />
+      <Footer />
     </div>
   )
 }
