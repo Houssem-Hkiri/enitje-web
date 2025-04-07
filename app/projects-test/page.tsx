@@ -24,6 +24,13 @@ async function getProjects() {
   }
 }
 
+// Helper function to truncate text
+function truncateText(text: string, maxLength: number): string {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+}
+
 export default async function ProjectsTestPage() {
   const projects = await getProjects();
   
@@ -42,7 +49,9 @@ export default async function ProjectsTestPage() {
         {projects.map((project) => (
           <div key={project.id} className="border p-4 rounded shadow">
             <h2 className="text-xl font-bold">{project.title}</h2>
-            <p className="text-gray-600 mb-2">{project.description}</p>
+            <p className="text-gray-600 mb-2 line-clamp-3">
+              {truncateText(project.description || '', 150)}
+            </p>
             {project.image_url && (
               <div className="mb-2">
                 <img 
@@ -52,9 +61,10 @@ export default async function ProjectsTestPage() {
                 />
               </div>
             )}
-            <div className="text-sm text-gray-500">
-              <p>Client: {project.client}</p>
-              <p>Category: {project.category}</p>
+            <div className="text-sm text-gray-500 mt-2">
+              {project.client && <p>Client: {project.client}</p>}
+              {project.category && <p>Category: {project.category}</p>}
+              {project.technologies && <p>Technologies: {project.technologies}</p>}
             </div>
           </div>
         ))}

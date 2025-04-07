@@ -90,7 +90,13 @@ export default function ProjectsPage() {
   const { language, setLanguage } = useLanguage()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   
-  const supabase = createClientComponentClient()
+  // Initialize Supabase with explicit URL and key to avoid issues with environment variables
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabase = createClientComponentClient({
+    supabaseUrl,
+    supabaseKey: supabaseAnonKey,
+  });
 
   // Extract unique categories from projects
   const categories = [...new Set(projects.map(project => project.category).filter(Boolean))] as string[];
@@ -136,22 +142,29 @@ export default function ProjectsPage() {
       console.log("Attempting to fetch projects from Supabase...");
       
       // Check if Supabase URL and key are available
-      if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      if (!supabaseUrl || !supabaseAnonKey) {
         throw new Error("Supabase credentials are missing");
       }
       
-      const { data, error, status } = await supabase
-        .from("projects")
-        .select("*")
-        .order("created_at", { ascending: false });
-      
-      if (error) {
-        console.error("Supabase error:", error);
-        throw new Error(`Database error: ${error.message} (Code: ${error.code})`);
+      // Use explicit error handling with fetch
+      try {
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*")
+          .order("created_at", { ascending: false });
+        
+        if (error) {
+          console.error("Supabase error:", error);
+          throw new Error(`Database error: ${error.message} (Code: ${error.code})`);
+        }
+        
+        console.log(`Successfully fetched ${data?.length || 0} projects`);
+        setProjects(data || []);
+      } catch (fetchError: any) {
+        console.error("Fetch operation error:", fetchError);
+        // Use a more specific error message
+        throw new Error(fetchError.message || "Network error while fetching projects");
       }
-      
-      console.log(`Successfully fetched ${data?.length || 0} projects`);
-      setProjects(data || []);
     } catch (err: any) {
       console.error("Project fetch error:", err);
       setError(err.message || "Failed to fetch projects");
