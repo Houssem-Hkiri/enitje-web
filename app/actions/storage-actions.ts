@@ -33,6 +33,13 @@ export type GalleryItem = {
   src: string
 }
 
+export type UploadResponse = {
+  success: boolean
+  url?: string
+  contentType?: string
+  error?: string
+}
+
 // Gallery data - we'll create this file to store gallery items
 let galleryData: { [key: string]: GalleryItem[] } = {
   en: [],
@@ -127,30 +134,24 @@ function saveDataToFile(filePath: string, data: any) {
 }
 
 // Upload image to Vercel Blob Storage
-export async function uploadImage(formData: FormData) {
+export async function uploadImage(file: File): Promise<UploadResponse> {
   try {
-    const file = formData.get("file") as File
-    if (!file) {
-      return { success: false, error: "No file uploaded" }
-    }
-
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, "-").toLowerCase()}`
-
-    // Upload to Vercel Blob
-    const blob = await put(fileName, file, {
-      access: "public",
-      addRandomSuffix: true,
+    const { put } = await import('@vercel/blob')
+    const result = await put(file.name, file, {
+      access: 'public',
     })
 
     return {
       success: true,
-      url: blob.url,
-      contentType: blob.contentType,
-      size: blob.size,
+      url: result.url,
+      contentType: result.contentType
     }
-  } catch (error: any) {
-    console.error("Error uploading image:", error)
-    return { success: false, error: error.message || "Failed to upload image" }
+  } catch (error) {
+    console.error('Error uploading image:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred'
+    }
   }
 }
 

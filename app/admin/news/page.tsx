@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Loader2, Plus, Pencil, Trash2, Upload, X, ImageIcon } from "lucide-react"
 import Image from "next/image"
 import type { NewsArticle } from "@/app/lib/supabase"
+import { uploadImage } from "@/app/actions/storage-actions"
 
 // Helper function to generate slug from title - only for suggestion
 const generateSlug = (title: string): string => {
@@ -76,26 +77,10 @@ export default function NewsPage() {
       setUploading(true)
       setError(null)
       
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `news/${fileName}`
-      
-      const { error: uploadError, data } = await supabase.storage
-        .from('images')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        })
-      
-      if (uploadError) throw uploadError
-      
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('images')
-        .getPublicUrl(filePath)
+      const { url, contentType } = await uploadImage(file, 'news')
       
       // Update form data with the image URL
-      setFormData({ ...formData, image_url: publicUrl })
+      setFormData({ ...formData, image_url: url })
       
     } catch (err: any) {
       console.error("Upload error:", err)
