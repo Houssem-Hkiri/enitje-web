@@ -2,14 +2,12 @@
 
 import React from 'react'
 import { useState, useEffect } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { ArrowLeft, Calendar, User, Clock, Tag } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Header from '../../components/Header'
 import Footer from '../../components/Footer'
-import { getNewsArticleBySlug } from "@/app/lib/supabase"
 import { setThemePreference, getThemePreference } from '../../utils/theme'
 import { translateArticle, isHtmlContent } from "@/app/lib/translation"
 import DOMPurify from 'isomorphic-dompurify'
@@ -27,17 +25,25 @@ const formatDate = (dateString: string, language: string) => {
   return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', options);
 };
 
-export default function NewsDetailPageClient({ slug }: { slug: string }) {
-  const [article, setArticle] = useState<NewsArticle | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface NewsDetailPageClientProps {
+  initialArticle: NewsArticle | null
+  initialRelatedArticles: NewsArticle[]
+  initialError: string | null
+}
+
+export default function NewsDetailPageClient({
+  initialArticle, 
+  initialRelatedArticles, 
+  initialError
+}: NewsDetailPageClientProps) {
+  const [article, setArticle] = useState<NewsArticle | null>(initialArticle)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(initialError)
+  const [relatedArticles, setRelatedArticles] = useState<NewsArticle[]>(initialRelatedArticles)
   const [darkMode, setDarkMode] = useState(true)
   const { language, setLanguage } = useLanguage()
-  const supabase = createClientComponentClient()
 
   useEffect(() => {
-    fetchArticle()
-    
     // Initialize theme on mount
     const theme = getThemePreference()
     setDarkMode(theme === 'dark')
@@ -60,25 +66,6 @@ export default function NewsDetailPageClient({ slug }: { slug: string }) {
       setThemePreference(newTheme)
       return !prev
     })
-  }
-
-  const fetchArticle = async () => {
-    try {
-      // Default fetch when no translation is needed
-      const { data, error } = await supabase
-        .from("news")
-        .select("*")
-        .eq("slug", slug)
-        .single()
-      
-      if (error) throw error
-      setArticle(data)
-    } catch (err: any) {
-      console.error("Error fetching article:", err)
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const toggleLanguage = (lang?: "fr" | "en") => {
