@@ -1,8 +1,6 @@
 import { Suspense } from "react"
 import HomeClient from "./HomeClient"
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
-import { cookies } from "next/headers"
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/app/lib/supabase-server'
 
 // Loading component
 function HomeLoading() {
@@ -13,8 +11,8 @@ function HomeLoading() {
         <p className="text-gray-600 dark:text-gray-300 text-center font-medium">
           Loading ENIT Junior Entreprise...
         </p>
-        </div>
-              </div>
+      </div>
+    </div>
   )
 }
 
@@ -23,37 +21,37 @@ export default async function HomePage() {
   
   try {
     // Fetch latest projects and news for the homepage using server functions
-    const { data: projects } = await supabase
+    const { data: projects = [] } = await supabase
       .from('projects')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(3)
 
-    const { data: news } = await supabase
+    const { data: news = [] } = await supabase
       .from('news')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(3)
 
-  return (
+    return (
       <Suspense fallback={<HomeLoading />}>
         <HomeClient 
           initialProjects={projects} 
           initialNews={news}
           initialError={null}
-            />
-          </Suspense>
+        />
+      </Suspense>
     )
   } catch (error: any) {
     console.error("Error fetching homepage data:", error)
-    
-    // We still render the page but without initial data
     return (
-      <HomeClient 
-        initialProjects={[]} 
-        initialNews={[]}
-        initialError="Failed to load initial data"
-      />
+      <Suspense fallback={<HomeLoading />}>
+        <HomeClient 
+          initialProjects={[]} 
+          initialNews={[]}
+          initialError={error.message}
+        />
+      </Suspense>
     )
   }
 }
