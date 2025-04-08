@@ -1,53 +1,57 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    // Check environment variables
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    
-    // Check if required environment variables are set
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({
-        error: "Supabase credentials missing",
-        details: {
-          hasUrl: !!supabaseUrl,
-          hasKey: !!supabaseAnonKey
-        }
-      }, { status: 500 });
-    }
-    
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    
-    // Test connection by fetching table info
-    const { data, error } = await supabase
-      .from('projects')
-      .select('count')
-      .limit(1);
-    
+    // Initialize Supabase client
+    const supabase = createRouteHandlerClient({ cookies })
+
+    // Test connection
+    const { data, error } = await supabase.from('news').select('count').single()
+
     if (error) {
-      return NextResponse.json({
-        error: "Database query error",
+      throw error
+    }
+
+    // Get environment details (safe to expose)
+    const envInfo = {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_ENV: process.env.VERCEL_ENV,
+      SUPABASE_URL_SET: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_ANON_KEY_SET: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+      DEPLOYMENT_URL: process.env.VERCEL_URL || 'Not deployed on Vercel',
+      NEXTJS_VERSION: process.env.npm_package_dependencies_next || 'Unknown',
+    }
+
+    return NextResponse.json({
+      status: 'success',
+      message: 'Supabase connection successful',
+      supabaseReachable: true,
+      data,
+      environment: envInfo,
+    })
+  } catch (error: any) {
+    console.error('Supabase Test API Error:', error)
+    
+    return NextResponse.json({
+      status: 'error',
+      message: 'Supabase connection failed',
+      supabaseReachable: false,
+      error: {
         message: error.message,
         code: error.code,
-        details: error.details
-      }, { status: 500 });
-    }
-    
-    // Success
-    return NextResponse.json({
-      success: true,
-      message: "Successfully connected to Supabase",
-      supabaseUrl: supabaseUrl.split('.')[0] + '.[redacted]', // Partial URL for security
-      tableInfo: data
-    });
-    
-  } catch (err: any) {
-    return NextResponse.json({
-      error: "Server error",
-      message: err.message
-    }, { status: 500 });
+        details: error.details,
+      },
+      environment: {
+        NODE_ENV: process.env.NODE_ENV,
+        VERCEL_ENV: process.env.VERCEL_ENV,
+        SUPABASE_URL_SET: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        SUPABASE_ANON_KEY_SET: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
+        DEPLOYMENT_URL: process.env.VERCEL_URL || 'Not deployed on Vercel',
+      }
+    }, { status: 500 })
   }
 } 

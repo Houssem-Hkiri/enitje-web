@@ -19,16 +19,29 @@ export async function middleware(req: NextRequest) {
     const path = req.nextUrl.pathname
 
     // If trying to access admin pages without a session, redirect to login
-    if (path.startsWith("/admin") && !session) {
-      return NextResponse.redirect(new URL("/login", req.url))
+    if (path.startsWith("/admin") && path !== "/admin/login" && !session) {
+      return NextResponse.redirect(new URL("/admin/login", req.url))
     }
 
     // If trying to access login page with a session, redirect to admin
-    if (path === "/login" && session) {
+    if (path === "/admin/login" && session) {
       return NextResponse.redirect(new URL("/admin", req.url))
     }
 
-    // Add security and performance headers
+    // Special handling for image requests
+    if (path.match(/\.(jpg|jpeg|png|gif|webp|svg|ico)$/i)) {
+      // For image requests, don't add the security headers that might block them
+      const imageRes = NextResponse.next()
+      
+      // Allow images from Supabase storage
+      if (req.headers.get('referer')?.includes('supabase.co')) {
+        imageRes.headers.set('Access-Control-Allow-Origin', '*')
+      }
+      
+      return imageRes
+    }
+
+    // Add security and performance headers for non-image requests
     res.headers.set('X-DNS-Prefetch-Control', 'on')
     res.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
     res.headers.set('X-XSS-Protection', '1; mode=block')
@@ -36,11 +49,11 @@ export async function middleware(req: NextRequest) {
     res.headers.set('X-Content-Type-Options', 'nosniff')
     res.headers.set('Referrer-Policy', 'origin-when-cross-origin')
     
-    // Add Content-Security-Policy header in production
+    // Add Content-Security-Policy header in production with less restrictive settings
     if (process.env.NODE_ENV === 'production') {
       res.headers.set(
         'Content-Security-Policy',
-        "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com;"
+        "default-src 'self' https://*.supabase.co; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com https://www.google-analytics.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://www.google-analytics.com https://*.supabase.co https://*.supabase.in; font-src 'self' data:; connect-src 'self' https://www.google-analytics.com https://*.supabase.co https://*.supabase.in;"
       )
     }
 
@@ -51,21 +64,30 @@ export async function middleware(req: NextRequest) {
     )
 
     // Add required CORS headers
-    res.headers.append('Access-Control-Allow-Credentials', 'true')
-    res.headers.append('Access-Control-Allow-Origin', '*') // Replace with your actual domain in production
-    res.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
-    res.headers.append(
+    const origin = req.headers.get('origin') || '*'
+    res.headers.set('Access-Control-Allow-Credentials', 'true')
+    res.headers.set('Access-Control-Allow-Origin', origin)
+    res.headers.set('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
+    res.headers.set(
       'Access-Control-Allow-Headers',
-      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
     )
+
+    // Handle preflight OPTIONS request
+    if (req.method === 'OPTIONS') {
+      return new NextResponse(null, { 
+        status: 200,
+        headers: res.headers
+      })
+    }
 
     // For all other cases, continue with the request
     return res
   } catch (error) {
     console.error("Middleware error:", error)
     // If there's an error checking the session, redirect to login for safety
-    if (req.nextUrl.pathname.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/login", req.url))
+    if (req.nextUrl.pathname.startsWith("/admin") && req.nextUrl.pathname !== "/admin/login") {
+      return NextResponse.redirect(new URL("/admin/login", req.url))
     }
     
     // For non-admin routes, continue with security headers on error
@@ -90,9 +112,7 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
-     * - public folder files like images, etc.
-     * But include admin and login routes for auth checks
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/|static/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 } 

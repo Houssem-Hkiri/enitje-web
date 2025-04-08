@@ -1,12 +1,30 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "export",
   images: {
-    unoptimized: true,
+    unoptimized: false,
     domains: [
       "hebbkx1anhila5yf.public.blob.vercel-storage.com",
-      "tnzlhwdfznnipprzvpbm.supabase.co"
+      "tnzlhwdfznnipprzvpbm.supabase.co",
+      "ibjdmfczfxusjovgjpbs.supabase.co",
+      "supabase.co",
+      "*.supabase.co",
+      "*.supabase.in",
+      "vercel-storage.com"
     ],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tnzlhwdfznnipprzvpbm.supabase.co',
+        port: '',
+        pathname: '/**',
+      }
+    ]
   },
   // Add trailing slashes for better SEO
   trailingSlash: true,
