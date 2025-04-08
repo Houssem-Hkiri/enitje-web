@@ -50,6 +50,15 @@ export async function middleware(req: NextRequest) {
       'camera=(), microphone=(), geolocation=(self), interest-cohort=()'
     )
 
+    // Add required CORS headers
+    res.headers.append('Access-Control-Allow-Credentials', 'true')
+    res.headers.append('Access-Control-Allow-Origin', '*') // Replace with your actual domain in production
+    res.headers.append('Access-Control-Allow-Methods', 'GET,DELETE,PATCH,POST,PUT')
+    res.headers.append(
+      'Access-Control-Allow-Headers',
+      'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+    )
+
     // For all other cases, continue with the request
     return res
   } catch (error) {
