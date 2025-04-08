@@ -13,8 +13,8 @@ function HomeLoading() {
         <p className="text-gray-600 dark:text-gray-300 text-center font-medium">
           Loading ENIT Junior Entreprise...
         </p>
-      </div>
-    </div>
+        </div>
+              </div>
   )
 }
 
@@ -34,15 +34,15 @@ export default async function HomePage() {
       .select('*')
       .order('created_at', { ascending: false })
       .limit(3)
-    
-    return (
+
+  return (
       <Suspense fallback={<HomeLoading />}>
         <HomeClient 
           initialProjects={projects} 
           initialNews={news}
           initialError={null}
-        />
-      </Suspense>
+            />
+          </Suspense>
     )
   } catch (error: any) {
     console.error("Error fetching homepage data:", error)

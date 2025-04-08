@@ -44,7 +44,7 @@ export default function AnalyticsPage() {
   const [currentData, setCurrentData] = useState<AnalyticsData | null>(null)
   const [activeTab, setActiveTab] = useState<'analytics' | 'search-console'>('analytics')
   const [usingRealData, setUsingRealData] = useState(false)
-  
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
