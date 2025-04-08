@@ -19,15 +19,15 @@ import { type StatsState, type RecentItem } from "../page"
 
 interface AdminDashboardClientProps {
   initialStats: StatsState | null
-  initialError: string | null
+  initialError?: string | null
 }
 
 export default function AdminDashboardClient({ 
   initialStats, 
-  initialError 
+  initialError = null 
 }: AdminDashboardClientProps) {
-  const [error] = useState<string | null>(initialError)
-  const [stats] = useState<StatsState | null>(initialStats)
+  const [error, setError] = useState<string | null>(initialError)
+  const [stats, setStats] = useState<StatsState | null>(initialStats)
   
   if (!stats && !error) {
     return (
