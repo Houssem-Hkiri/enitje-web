@@ -77,7 +77,8 @@ export default function NewsPage() {
       setUploading(true)
       setError(null)
       
-      const { url, contentType } = await uploadImage(file, 'news')
+      const { url } = await uploadImage(file)
+      if (!url) throw new Error("Failed to get upload URL")
       
       // Update form data with the image URL
       setFormData({ ...formData, image_url: url })
