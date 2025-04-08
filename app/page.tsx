@@ -2,7 +2,7 @@ import { Suspense } from "react"
 import HomeClient from "./HomeClient"
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
-import { getNewsArticlesServer, getProjectsServer } from "./lib/supabase-server"
+import { createClient } from '@/lib/supabase-server'
 
 // Loading component
 function HomeLoading() {
@@ -19,12 +19,21 @@ function HomeLoading() {
 }
 
 export default async function HomePage() {
+  const supabase = createClient()
+  
   try {
     // Fetch latest projects and news for the homepage using server functions
-    const [projects, news] = await Promise.all([
-      getProjectsServer(6),
-      getNewsArticlesServer(6)
-    ])
+    const { data: projects } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(3)
+
+    const { data: news } = await supabase
+      .from('news')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(3)
     
     return (
       <Suspense fallback={<HomeLoading />}>
