@@ -14,7 +14,7 @@ import Footer from "../components/Footer"
 import { translations } from "../translations"
 import { getThemePreference, setThemePreference } from '../utils/theme'
 import { useLanguage } from "../contexts/LanguageContext"
-import { createClient } from '@/lib/supabase-server'
+import { createClient } from '@/app/lib/supabase-server'
 import ContactForm from './ContactForm'
 
 interface FormData {
