@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
+import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { cookies } from "next/headers";
 
 // Create a single supabase client for interacting with the database
 const supabase = createClient(
@@ -151,6 +153,74 @@ export const deleteProject = async (id: string) => {
   
   if (error) throw error;
   return true;
+}
+
+export async function getProjects(limit = 6) {
+  const supabase = createServerComponentClient({ cookies });
+  
+  const { data: projects, error } = await supabase
+    .from("projects")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+    
+  if (error) {
+    console.error("Error fetching projects:", error);
+    return [];
+  }
+  
+  return projects || [];
+}
+
+export async function getNewsArticles(limit = 6) {
+  const supabase = createServerComponentClient({ cookies });
+  
+  const { data: news, error } = await supabase
+    .from("news")
+    .select("*") 
+    .order("created_at", { ascending: false })
+    .limit(limit);
+    
+  if (error) {
+    console.error("Error fetching news articles:", error);
+    return [];
+  }
+  
+  return news || [];
+}
+
+export async function getProjectById(id: string) {
+  const supabase = createServerComponentClient({ cookies });
+  
+  const { data, error } = await supabase
+    .from("projects")
+    .select("*")
+    .eq("id", id)
+    .single();
+    
+  if (error) {
+    console.error(`Error fetching project with id ${id}:`, error);
+    return null;
+  }
+  
+  return data;
+}
+
+export async function getNewsArticleById(id: string) {
+  const supabase = createServerComponentClient({ cookies });
+  
+  const { data, error } = await supabase
+    .from("news")
+    .select("*")
+    .eq("id", id)
+    .single();
+    
+  if (error) {
+    console.error(`Error fetching news article with id ${id}:`, error);
+    return null;
+  }
+  
+  return data;
 }
 
 export default supabase 
