@@ -1,17 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['localhost', 'enitje.com'],
+    domains: ['enitje.com', 'localhost'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.supabase.co',
-        pathname: '/storage/v1/object/public/**',
+        hostname: '**',
       },
     ],
   },
   experimental: {
-    serverActions: true,
+    serverComponentsExternalPackages: ['@supabase/ssr'],
   },
   async headers() {
     return [
