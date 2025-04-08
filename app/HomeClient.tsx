@@ -50,6 +50,27 @@ interface HomeClientProps {
   initialError: string | null
 }
 
+// Optimize intersection observer with better performance
+const useReducedMotion = () => {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
+    setPrefersReducedMotion(mediaQuery.matches)
+
+    const handleChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches)
+    }
+
+    mediaQuery.addEventListener("change", handleChange)
+    return () => mediaQuery.removeEventListener("change", handleChange)
+  }, [])
+
+  return prefersReducedMotion
+}
+
 export default function HomeClient({ initialProjects, initialNews, initialError }: HomeClientProps) {
   const { language, translations } = useLanguage()
   const [darkMode, setDarkMode] = useState(true)
@@ -108,27 +129,6 @@ export default function HomeClient({ initialProjects, initialNews, initialError 
     },
     [prefersReducedMotion],
   )
-
-  // Optimize intersection observer with better performance
-  const useReducedMotion = () => {
-    const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
-  
-    useEffect(() => {
-      if (typeof window === 'undefined') return
-      
-      const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
-      setPrefersReducedMotion(mediaQuery.matches)
-  
-      const handleChange = (e: MediaQueryListEvent) => {
-        setPrefersReducedMotion(e.matches)
-      }
-  
-      mediaQuery.addEventListener("change", handleChange)
-      return () => mediaQuery.removeEventListener("change", handleChange)
-    }, [])
-  
-    return prefersReducedMotion
-  }
 
   // Memoize statistics data
   const statistics = useMemo(

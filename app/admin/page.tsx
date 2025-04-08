@@ -1,6 +1,8 @@
 import { createServerComponentClient } from "@supabase/auth-helpers-nextjs"
 import { cookies } from "next/headers"
 import AdminDashboardClient from "./components/AdminDashboardClient"
+import { redirect } from "next/navigation"
+import { isUserAdmin } from "../lib/supabase-server"
 
 export interface RecentItem {
   id: string
@@ -19,6 +21,14 @@ export interface StatsState {
 }
 
 export default async function AdminDashboard() {
+  // Check if user is authenticated and has admin rights
+  const isAdmin = await isUserAdmin();
+  
+  // If not admin, redirect to login
+  if (!isAdmin) {
+    redirect('/admin/login');
+  }
+  
   const supabase = createServerComponentClient({ cookies })
   
   try {
